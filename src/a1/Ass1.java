@@ -89,11 +89,14 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener, Mou
         FloatBuffer color = FloatBuffer.allocate(4);
         color.put(0, (float) (Math.sin(System.currentTimeMillis() / 300.0) * 0.5 + 0.5));
         color.put(1, (float) (Math.cos(System.currentTimeMillis() / 300.0) * 0.5 + 0.5));
-        color.put(2, 0.0f);
+        color.put(2, (float) (Math.sin(System.currentTimeMillis() / 300.0) * 0.5 + 0.5));//0.0f);
         color.put(3, 1.0f);
 
         FloatBuffer scale = FloatBuffer.allocate(1);
-        scale.put(0, size);//(float) Math.abs((Math.cos(System.currentTimeMillis() / 800.0) * 1.0f) + size));
+        float s = (float) Math.abs((Math.cos(System.currentTimeMillis() / 800.0) * 1.0f) + size);
+        if (s > 1.9) s -= 0.1;
+        else if (s < 0.1) s += 0.1;
+        scale.put(0, s);
 
         FloatBuffer attrib = FloatBuffer.allocate(4);
         attrib.put(0, (float) (Math.sin(System.currentTimeMillis() / 400.0) * 0.9f));
@@ -101,9 +104,14 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener, Mou
         attrib.put(2, 0.0f);
         attrib.put(3, 0.0f);
 
+        FloatBuffer gradient = FloatBuffer.allocate(1);
+        float g = 0.5f;
+        gradient.put(0, g);
+
 
         GL4 gl = (GL4) drawable.getGL();
         gl.glClearBufferfv(GL_COLOR, 0, color);
+        gl.glVertexAttrib4fv(2, gradient);
         gl.glVertexAttrib4fv(1, scale);
         gl.glVertexAttrib4fv(0, attrib);
         gl.glUseProgram(rendering_program);
@@ -111,6 +119,12 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener, Mou
 
     }
 
+//    const vec4 vertices[5] = vec4[5](
+//    vec4(0, 1, 0),
+//    vec4(-1, -1, 1),
+//    vec4(1,-1,1),
+//    vec4(1, -1, -1 ),
+//    vec4(-1, -1, -1)) ;
 
     //        String currentpath = System.getProperty("user.dir");
 //        System.out.println("current path is " + currentpath);
