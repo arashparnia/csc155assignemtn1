@@ -93,7 +93,7 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener, Mou
         color.put(3, 1.0f);
 
         FloatBuffer scale = FloatBuffer.allocate(1);
-        scale.put(0, size);//(float) (Math.cos(System.currentTimeMillis() / 800.0) * 1.0f) + size);
+        scale.put(0, size);//(float) Math.abs((Math.cos(System.currentTimeMillis() / 800.0) * 1.0f) + size));
 
         FloatBuffer attrib = FloatBuffer.allocate(4);
         attrib.put(0, (float) (Math.sin(System.currentTimeMillis() / 400.0) * 0.9f));
@@ -169,11 +169,11 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener, Mou
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        if (e.getUnitsToScroll() < 1) {
-            System.out.println("wheels up");
+        if (e.getUnitsToScroll() < 1 && size < 1.9f) {
+            System.out.println("wheels up size is" + size);
             size += 0.1f;
-        } else {
-            System.out.println("wheels down");
+        } else if (size > 0.1f) {
+            System.out.println("wheels down size is " + size);
             size -= 0.1f;
         }
     }
