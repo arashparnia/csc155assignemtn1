@@ -8,26 +8,27 @@ import graphicslib3D.GLSLUtils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.nio.FloatBuffer;
 
 import static com.jogamp.opengl.GL.GL_TRIANGLES;
 import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 
-public class Ass1 extends JFrame implements GLEventListener, ActionListener {
+public class Ass1 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener {
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
     private int rendering_program;
     private int VAO[] = new int[1];
     private GLSLUtils util = new GLSLUtils();
     private float upDown = 0.0f;
+    private float size = 1.0f;
 
 
     public Ass1() {
         setTitle("Assignment 1 CSC155");
         setSize(dimention);
+        this.addMouseWheelListener(this);
+        //this.addMouseListener(this);
         //setLayout(null);
         myCanvas = new GLCanvas();
         myCanvas.addGLEventListener(this);
@@ -92,7 +93,7 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener {
         color.put(3, 1.0f);
 
         FloatBuffer scale = FloatBuffer.allocate(1);
-        scale.put(0, (float) (Math.cos(System.currentTimeMillis() / 800.0) * 1.0f));
+        scale.put(0, size);//(float) (Math.cos(System.currentTimeMillis() / 800.0) * 1.0f) + size);
 
         FloatBuffer attrib = FloatBuffer.allocate(4);
         attrib.put(0, (float) (Math.sin(System.currentTimeMillis() / 400.0) * 0.9f));
@@ -156,13 +157,25 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener {
     }
 
     public void actionPerformed(ActionEvent e) {
-        if ("up".equals(e.getActionCommand())) {
+        if ("up".equals(e.getActionCommand()) && upDown < 1) {
             upDown += 0.1;
-        } else if ("down".equals(e.getActionCommand())) {
+        } else if ("down".equals(e.getActionCommand()) && upDown > -1) {
             upDown -= 0.1;
         }
 
 
+    }
+
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        if (e.getUnitsToScroll() < 1) {
+            System.out.println("wheels up");
+            size += 0.1f;
+        } else {
+            System.out.println("wheels down");
+            size -= 0.1f;
+        }
     }
 
 
