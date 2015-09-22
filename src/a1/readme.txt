@@ -22,6 +22,7 @@ program function explained:
     Each vertices multiples by the value scale that will result in scaling the triangles.
     Scale can be set by mouse wheel movement or by autoscale button that is another sin function.
     Tip vertices of major triangles have another scale called spike. spike randomly scales the vertices to create flickering effect.
+    A random number causes colors to change in every frame.
     There is a random generator in frag shader that uses input positions to create noise within the pixels.
     All features can be turned on and off using the button on the left top corner of the GL window.
 
