@@ -12,8 +12,10 @@ import java.awt.event.*;
 import java.nio.FloatBuffer;
 import java.util.Random;
 
+import static com.jogamp.opengl.GL.GL_CCW;
 import static com.jogamp.opengl.GL.GL_TRIANGLES;
 import static com.jogamp.opengl.GL2ES3.GL_COLOR;
+
 
 public class Ass1 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener {
     private Dimension dimention = new Dimension(1000, 1000);
@@ -152,6 +154,13 @@ public class Ass1 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glVertexAttrib4fv(1, scale);
         gl.glVertexAttrib4fv(0, attrib);
         gl.glUseProgram(rendering_program);
+
+
+        //gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CCW);
+        //gl.glEnable(GL_DEPTH_TEST);
+        //gl.glDepthFunc(GL_LEQUAL);
+
         gl.glDrawArrays(GL_TRIANGLES, 0, 36);
     }
 
