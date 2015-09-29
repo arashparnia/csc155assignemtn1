@@ -22,6 +22,7 @@ import static com.jogamp.opengl.GL4.*;
 
 
 public class Ass2 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener {
+    public static float zoom = 0.0f;
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
     private MatrixStack mvStack = new MatrixStack(5);
@@ -34,7 +35,6 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private int VAO[] = new int[1];
     private GLSLUtils util = new GLSLUtils();
     private float upDown = 0.0f;
-    private float size = 0.0f;
     private float g = 1f;
     private boolean animated = true;
     private Animator animator;
@@ -45,24 +45,32 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private Random rand;
 
     public Ass2() {
-        JPanel panel = new JPanel();
+        //JPanel panel = new JPanel();
         //panel.setLayout(null);
-        panel.setBounds(0, 0, this.getWidth(), 50);
+        //panel.setBounds(0, 0, this.getWidth(), 50);
         //get the "focus is in the window" input map for the center panel
         int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
-        InputMap imap = panel.getInputMap(mapName);
+        InputMap imap = this.getRootPane().getInputMap(mapName);
         //create a keystroke object to represent the "f" key
-        KeyStroke fKey = KeyStroke.getKeyStroke('f');
+        KeyStroke upKey = KeyStroke.getKeyStroke("UP");
+        KeyStroke downKey = KeyStroke.getKeyStroke("DOWN");
+
         //put the "f-Key" keystroke object into the panel’s "when focus is
         // in the window" input map under the identifier "fire"
-        ActionMap amap = panel.getActionMap();
-        imap.put(fKey, "fire");
+        ActionMap amap = this.getRootPane().getActionMap();
+        imap.put(upKey, "zoomin");
+        imap.put(downKey, "zoomout");
+
         //get the action map for the panel
 
         //put the "fireCommand" object (an instance of class "fireCommand";
         // an Action object created elsewhere that performs the “fire” operation)
         // into the panel's actionMap
-        amap.put("fire", fireCommand);
+        zoomIn zoomin = new zoomIn();
+        amap.put("zoomin", zoomin);
+        zoomOut zoomout = new zoomOut();
+        amap.put("zoomout", zoomout);
+
         //have the frame request keyboard focus
 
         setTitle("Assignment 2 CSC155");
@@ -71,53 +79,54 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         myCanvas = new GLCanvas();
         myCanvas.addGLEventListener(this);
         rand = new Random();
-
-        JButton up = new JButton("UP");
-        up.setVerticalTextPosition(AbstractButton.CENTER);
-        up.setHorizontalTextPosition(AbstractButton.CENTER);
-        up.setMnemonic(KeyEvent.VK_W);
-        up.setActionCommand("up");
-        up.setBounds(5, 0, 100, 50);
-        up.addActionListener(this);
-        panel.add(up);
-        JButton down = new JButton("DOWN");
-        down.setVerticalTextPosition(AbstractButton.CENTER);
-        down.setHorizontalTextPosition(AbstractButton.CENTER);
-        down.setMnemonic(KeyEvent.VK_KP_DOWN);
-        down.setActionCommand("down");
-        down.setBounds(110, 0, 100, 50);
-        down.addActionListener(this);
-        panel.add(down);
-        JButton color = new JButton("COLOR");
-        color.setVerticalTextPosition(AbstractButton.CENTER);
-        color.setHorizontalTextPosition(AbstractButton.CENTER);
-        color.setMnemonic(KeyEvent.VK_KP_DOWN);
-        color.setActionCommand("color");
-        color.setBounds(215, 0, 100, 50);
-        color.addActionListener(this);
-        panel.add(color);
-        JButton nse = new JButton("NOISE");
-        nse.setVerticalTextPosition(AbstractButton.CENTER);
-        nse.setHorizontalTextPosition(AbstractButton.CENTER);
-        nse.setMnemonic(KeyEvent.VK_KP_DOWN);
-        nse.setActionCommand("noise");
-        nse.setBounds(320, 0, 100, 50);
-        nse.addActionListener(this);
-        panel.add(nse);
-        JButton pause = new JButton("AUTOZOOM");
-        pause.setVerticalTextPosition(AbstractButton.CENTER);
-        pause.setHorizontalTextPosition(AbstractButton.CENTER);
-        pause.setMnemonic(KeyEvent.VK_KP_DOWN);
-        pause.setActionCommand("autozoom");
-        pause.setBounds(425, 0, 100, 50);
-        pause.addActionListener(this);
-        panel.add(pause);
+//
+//        JButton up = new JButton("UP");
+//        up.setVerticalTextPosition(AbstractButton.CENTER);
+//        up.setHorizontalTextPosition(AbstractButton.CENTER);
+//        up.setMnemonic(KeyEvent.VK_W);
+//        up.setActionCommand("up");
+//        up.setBounds(5, 0, 100, 50);
+//        up.addActionListener(this);
+//        add(up);
+//        JButton down = new JButton("DOWN");
+//        down.setVerticalTextPosition(AbstractButton.CENTER);
+//        down.setHorizontalTextPosition(AbstractButton.CENTER);
+//        down.setMnemonic(KeyEvent.VK_KP_DOWN);
+//        down.setActionCommand("down");
+//        down.setBounds(110, 0, 100, 50);
+//        down.addActionListener(this);
+//        add(down);
+//        JButton color = new JButton("COLOR");
+//        color.setVerticalTextPosition(AbstractButton.CENTER);
+//        color.setHorizontalTextPosition(AbstractButton.CENTER);
+//        color.setMnemonic(KeyEvent.VK_KP_DOWN);
+//        color.setActionCommand("color");
+//        color.setBounds(215, 0, 100, 50);
+//        color.addActionListener(this);
+//        add(color);
+//        JButton nse = new JButton("NOISE");
+//        nse.setVerticalTextPosition(AbstractButton.CENTER);
+//        nse.setHorizontalTextPosition(AbstractButton.CENTER);
+//        nse.setMnemonic(KeyEvent.VK_KP_DOWN);
+//        nse.setActionCommand("noise");
+//        nse.setBounds(320, 0, 100, 50);
+//        nse.addActionListener(this);
+//        add(nse);
+//        JButton pause = new JButton("AUTOZOOM");
+//        pause.setVerticalTextPosition(AbstractButton.CENTER);
+//        pause.setHorizontalTextPosition(AbstractButton.CENTER);
+//        pause.setMnemonic(KeyEvent.VK_KP_DOWN);
+//        pause.setActionCommand("autozoom");
+//        pause.setBounds(425, 0, 100, 50);
+//        pause.addActionListener(this);
+//        add(pause);
 
 
         //this.setLayout(null);
-        this.add(panel);
+        //this.add(panel);
         add(myCanvas);
         setVisible(true);
+
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent windowEvent) {
@@ -180,7 +189,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         // push view matrix onto the stack
         mvStack.pushMatrix();
         mvStack.translate(-cameraX, -cameraY, -cameraZ);
-        mvStack.translate(0, 0, -size);
+        mvStack.translate(0, 0, -zoom);
         double amt = (double) (System.currentTimeMillis() % 360000) / 1000.0;
 
 
@@ -434,11 +443,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         if (e.getUnitsToScroll() < 0) {
-            System.out.println("wheels up size is" + size);
-            size += 1f;
+            System.out.println("wheels up size is" + zoom);
+            zoom += 1f;
         } else {
-            System.out.println("wheels down size is " + size);
-            size -= 1f;
+            System.out.println("wheels down size is " + zoom);
+            zoom -= 1f;
         }
     }
 
@@ -458,12 +467,19 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     }
 
-    private class zoom extends AbstractAction {
-
-
+    private class zoomIn extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
+            Ass2.zoom += 1.0f;
+            System.out.println("zoom + 1.0");
+        }
+    }
 
+    private class zoomOut extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.zoom -= 1.0f;
+            System.out.println("zoom - 1.0");
         }
     }
 }
