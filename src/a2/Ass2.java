@@ -7,6 +7,7 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import graphicslib3D.GLSLUtils;
 import graphicslib3D.Matrix3D;
+import graphicslib3D.MatrixStack;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,9 +21,10 @@ import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 import static com.jogamp.opengl.GL4.*;
 
 
-public class Ass2 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener {
+public class Ass2 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener {
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
+    private MatrixStack mvStack = new MatrixStack(5);
     private int vao[] = new int[1];
     private int vbo[] = new int[2];
     private float cameraX, cameraY, cameraZ;
@@ -43,6 +45,26 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private Random rand;
 
     public Ass2() {
+        JPanel panel = new JPanel();
+        //panel.setLayout(null);
+        panel.setBounds(0, 0, this.getWidth(), 50);
+        //get the "focus is in the window" input map for the center panel
+        int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
+        InputMap imap = panel.getInputMap(mapName);
+        //create a keystroke object to represent the "f" key
+        KeyStroke fKey = KeyStroke.getKeyStroke('f');
+        //put the "f-Key" keystroke object into the panel’s "when focus is
+        // in the window" input map under the identifier "fire"
+        ActionMap amap = panel.getActionMap();
+        imap.put(fKey, "fire");
+        //get the action map for the panel
+
+        //put the "fireCommand" object (an instance of class "fireCommand";
+        // an Action object created elsewhere that performs the “fire” operation)
+        // into the panel's actionMap
+        amap.put("fire", fireCommand);
+        //have the frame request keyboard focus
+
         setTitle("Assignment 2 CSC155");
         setSize(dimention);
         this.addMouseWheelListener(this);
@@ -57,7 +79,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         up.setActionCommand("up");
         up.setBounds(5, 0, 100, 50);
         up.addActionListener(this);
-        add(up);
+        panel.add(up);
         JButton down = new JButton("DOWN");
         down.setVerticalTextPosition(AbstractButton.CENTER);
         down.setHorizontalTextPosition(AbstractButton.CENTER);
@@ -65,7 +87,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         down.setActionCommand("down");
         down.setBounds(110, 0, 100, 50);
         down.addActionListener(this);
-        add(down);
+        panel.add(down);
         JButton color = new JButton("COLOR");
         color.setVerticalTextPosition(AbstractButton.CENTER);
         color.setHorizontalTextPosition(AbstractButton.CENTER);
@@ -73,7 +95,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         color.setActionCommand("color");
         color.setBounds(215, 0, 100, 50);
         color.addActionListener(this);
-        add(color);
+        panel.add(color);
         JButton nse = new JButton("NOISE");
         nse.setVerticalTextPosition(AbstractButton.CENTER);
         nse.setHorizontalTextPosition(AbstractButton.CENTER);
@@ -81,7 +103,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         nse.setActionCommand("noise");
         nse.setBounds(320, 0, 100, 50);
         nse.addActionListener(this);
-        add(nse);
+        panel.add(nse);
         JButton pause = new JButton("AUTOZOOM");
         pause.setVerticalTextPosition(AbstractButton.CENTER);
         pause.setHorizontalTextPosition(AbstractButton.CENTER);
@@ -89,8 +111,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         pause.setActionCommand("autozoom");
         pause.setBounds(425, 0, 100, 50);
         pause.addActionListener(this);
-        add(pause);
+        panel.add(pause);
 
+
+        //this.setLayout(null);
+        this.add(panel);
         add(myCanvas);
         setVisible(true);
         this.addWindowListener(new WindowAdapter() {
@@ -103,6 +128,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     public void init(GLAutoDrawable drawable) {
+
+
+        this.requestFocus();
         GL4 gl = (GL4) drawable.getGL();
         rendering_program = createShaderPrograms(drawable);
         setupVertices(gl);
@@ -142,27 +170,43 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         float aspect = myCanvas.getWidth() / myCanvas.getHeight();
         Matrix3D pMat = perspective(50.0f, aspect, 0.1f, 1000.0f);
 
-        Matrix3D vMat = new Matrix3D();
-        vMat.translate(-cameraX, -cameraY, -cameraZ);
-        vMat.translate(0, 0, -size);
-        double x = (double) ((System.currentTimeMillis() / 20) % 72000) / 200.0;
+        // Matrix3D vMat = new Matrix3D();
+
+        //vMat.translate(-cameraX, -cameraY, -cameraZ);
+        //vMat.translate(0, 0, -size);
+        //double x = (double) ((System.currentTimeMillis() / 20) % 72000) / 200.0;
 
 
-        // ------------------- draw the cube using buffer #0
-        Matrix3D mMat = new Matrix3D();
-        //double amt = (double) (System.currentTimeMillis()%3600)/10.0;
-        //mMat.rotate(amt, amt, amt);
-        mMat.translate(cubeLocX, cubeLocY, cubeLocZ);
-        mMat.rotate(0, ++rotationi, rotationi);
-        // mMat.rotate(0,size,0);
-        // mMat.rotate(45*x, 0, x);
-        //mMat.rotate(21*x, x, 0);
-        //mMat.scale(2,2,2);
-        //mMat.translate(Math.sin(2.1*x)*2.0,Math.cos(1.7*x)*2.0,Math.sin(1.3*x)*Math.cos(1.5*x)*2.0);
-        Matrix3D mvMat = new Matrix3D();
-        mvMat.concatenate(vMat);
-        mvMat.concatenate(mMat);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvMat.getFloatValues(), 0);
+        // push view matrix onto the stack
+        mvStack.pushMatrix();
+        mvStack.translate(-cameraX, -cameraY, -cameraZ);
+        mvStack.translate(0, 0, -size);
+        double amt = (double) (System.currentTimeMillis() % 360000) / 1000.0;
+
+
+        // ----------------------  pyramid == sun
+        mvStack.pushMatrix();
+        mvStack.translate(skyBoxLocX, skyBoxLocY, skyBoxLocZ);
+        mvStack.scale(10, 10, 10);
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 1.0, 0.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CCW);
+        gl.glEnable(GL_DEPTH_TEST);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+        mvStack.popMatrix();
+
+        //-----------------------  cube == planet
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(amt) * 10f, 0.0f, Math.cos(amt) * 10f);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -170,29 +214,74 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
-        gl.glDepthFunc(GL_LEQUAL);
-        gl.glVertexAttrib4fv(1, noise);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 500);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+        mvStack.popMatrix();
 
-        // ------------------- draw the Skybox using buffer #1
-        mMat = new Matrix3D();
-        mMat.translate(skyBoxLocX, skyBoxLocY, skyBoxLocZ);
-        mMat.rotate(rotationi, rotationi, rotationi);
-        mMat.scale(1000, 1000, 1000);
-        mvMat = new Matrix3D();
-        mvMat.concatenate(vMat);
-        mvMat.concatenate(mMat);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvMat.getFloatValues(), 0);
+        //-----------------------  smaller cube == moon
+        mvStack.pushMatrix();
+        mvStack.translate(0.0f, Math.sin(amt) / 2.0f, Math.cos(amt) / 2.0f);
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 0.0, 1.0);
+        mvStack.scale(0.25, 0.25, 0.25);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
         gl.glEnable(GL_CULL_FACE);
-        gl.glFrontFace(GL_CCW);
+        gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
-        gl.glDepthFunc(GL_LEQUAL);
-        gl.glVertexAttrib4fv(1, noise);
-        gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+        mvStack.popMatrix();
+        mvStack.popMatrix();
+        mvStack.popMatrix();
+//
+//        // ------------------- draw the cube using buffer #0
+//        Matrix3D mMat = new Matrix3D();
+//        //double amt = (double) (System.currentTimeMillis()%3600)/10.0;
+//        //mMat.rotate(amt, amt, amt);
+//        mMat.translate(cubeLocX, cubeLocY, cubeLocZ);
+//        mMat.rotate(0, ++rotationi, rotationi);
+//        // mMat.rotate(0,size,0);
+//        // mMat.rotate(45*x, 0, x);
+//        //mMat.rotate(21*x, x, 0);
+//        //mMat.scale(2,2,2);
+//        //mMat.translate(Math.sin(2.1*x)*2.0,Math.cos(1.7*x)*2.0,Math.sin(1.3*x)*Math.cos(1.5*x)*2.0);
+//        Matrix3D mvMat = new Matrix3D();
+//        mvMat.concatenate(vMat);
+//        mvMat.concatenate(mMat);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+//        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+//        gl.glEnableVertexAttribArray(0);
+//        gl.glEnable(GL_CULL_FACE);
+//        gl.glFrontFace(GL_CW);
+//        gl.glEnable(GL_DEPTH_TEST);
+//        gl.glDepthFunc(GL_LEQUAL);
+//        gl.glVertexAttrib4fv(1, noise);
+//        gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 500);
+//
+//        // ------------------- draw the Skybox using buffer #1
+//        mMat = new Matrix3D();
+//        mMat.translate(skyBoxLocX, skyBoxLocY, skyBoxLocZ);
+//        mMat.rotate(rotationi, rotationi, rotationi);
+//        mMat.scale(1000, 1000, 1000);
+//        mvMat = new Matrix3D();
+//        mvMat.concatenate(vMat);
+//        mvMat.concatenate(mMat);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+//        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+//        gl.glEnableVertexAttribArray(0);
+//        gl.glEnable(GL_CULL_FACE);
+//        gl.glFrontFace(GL_CCW);
+//        gl.glEnable(GL_DEPTH_TEST);
+//        gl.glDepthFunc(GL_LEQUAL);
+//        gl.glVertexAttrib4fv(1, noise);
+//        gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, 1);
     }
 
 
@@ -225,6 +314,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                         -0.25f, 0.25f, -0.25f, 0.25f, 0.25f, -0.25f, 0.25f, 0.25f, 0.25f,
                         0.25f, 0.25f, 0.25f, -0.25f, 0.25f, 0.25f, -0.25f, 0.25f, -0.25f
                 };
+
 
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
@@ -353,4 +443,27 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     }
 
 
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+
+    }
+
+    private class zoom extends AbstractAction {
+
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+        }
+    }
 }

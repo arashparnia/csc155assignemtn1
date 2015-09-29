@@ -2,7 +2,7 @@
 
 in vec3 position;
 in vec4 vColor;
-in float noise;
+//in float noise;
 out vec4 color;
 
 uniform mat4 mv_matrix;
@@ -17,9 +17,9 @@ void main(void)
 {
     //color = vColor;
 	//float x = rand(vs_color);
-    if (noise == 1){
-	  color = vColor *  rand(vColor.xy);
-  } else {
+   // if (noise == 1){
+	 // color = vColor *  rand(vColor.xy);
+  //} else {
     color = vColor;
-  }
+  //}
 }
