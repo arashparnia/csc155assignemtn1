@@ -24,10 +24,53 @@ import static com.jogamp.opengl.GL4.*;
 
 
 public class Ass2 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener {
+
+    //scaled at 10 billion
+    private static final float sunSize = 1.39f; //cm
+
+    private static final float mercurySize = 0.05f; //cm
+    private static final float mercuryDistance = 5f; //57,909,000
+    //private float MercuryOrbit = 5.8 //m
+
+    private static final float venusSize = 0.12f; //cm
+    private static final float venusDistance = 10f; //108,200,000
+    //private float VenusOrbit = 10.8 //m
+
+    private static final float earthSize = 0.13f; //cm
+    private static final float earthDistance = 14f; //149,600,000
+    //private float EarthOrbit = 15.0 //m
+
+    private static final float marsSize = 0.07f; //cm
+    private static final float marsDistance = 22f; //227,940,000
+    //private float MarsOrbit = 22.8 //m
+
+    private static final float jupiterSize = 1.43f;//1.43 cm
+    private static final float jupiterDistance = 77f; //778,400,000
+    //private float JupiterOrbit = 77.8 //m
+
+    private static final float saturnSize = 1.2f;//1.2 cm
+    private static final float saturnDistance = 142f; // 1,423,600,000
+    //private float SaturnOrbit = 142.4 //m
+
+    private static final float uranusSize = 0.5f;//0.51 cm
+    private static final float uranusDistance = 286f; // 2,867,000,000
+    //private float UranusOrbit =  286.7 //m
+
+    private static final float neptuneSize = 0.49f;//0.49 cm
+    private static final float neptuneDistance = 448f; //4,488,400,000
+    //private float NeptuneOrbit = 448.9 //m
+
+    private static final float plutoSize = 0.02f; // 0.02 cm
+    private static final float plutoDistance = 590f; // 5,909,600,000
+    //private float PlutoOrbit = 591.0 //m
+
+
+
     public static float zoom = 0.0f;
+    public static float strafe = 0.0f;
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
-    private MatrixStack mvStack = new MatrixStack(5);
+
     private int vao[] = new int[1];
     private int vbo[] = new int[3];
     private float cameraX, cameraY, cameraZ;
@@ -48,15 +91,27 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     public Ass2() {
         int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
         InputMap imap = this.getRootPane().getInputMap(mapName);
-        KeyStroke upKey = KeyStroke.getKeyStroke("w");
-        KeyStroke downKey = KeyStroke.getKeyStroke("s");
         ActionMap amap = this.getRootPane().getActionMap();
+
+        KeyStroke upKey = KeyStroke.getKeyStroke('w');
         imap.put(upKey, "zoomin");
-        imap.put(downKey, "zoomout");
         zoomIn zoomin = new zoomIn();
         amap.put("zoomin", zoomin);
+
+        KeyStroke downKey = KeyStroke.getKeyStroke('s');
+        imap.put(downKey, "zoomout");
         zoomOut zoomout = new zoomOut();
         amap.put("zoomout", zoomout);
+
+        KeyStroke rightKey = KeyStroke.getKeyStroke('d');
+        imap.put(rightKey, "straferight");
+        strafeRight straferight = new strafeRight();
+        amap.put("straferight", straferight);
+
+        KeyStroke leftKey = KeyStroke.getKeyStroke('a');
+        imap.put(leftKey, "strafeleft");
+        strafeLeft strafeleft = new strafeLeft();
+        amap.put("strafeleft", strafeleft);
 
         setTitle("Assignment 2 CSC155");
         setSize(dimention);
@@ -76,21 +131,13 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     public void init(GLAutoDrawable drawable) {
-
-
-        this.requestFocus();
+        this.getRootPane().requestFocus();
         GL4 gl = (GL4) drawable.getGL();
         rendering_program = createShaderPrograms(drawable);
         setupVertices(gl);
         cameraX = 0.0f;
         cameraY = 0.0f;
-        cameraZ = 10.0f;
-        cubeLocX = 0.0f;
-        cubeLocY = -0.5f;
-        cubeLocZ = 0.0f;
-        skyBoxLocX = 0.0f;
-        skyBoxLocY = 0.0f;
-        skyBoxLocZ = 0.0f;
+        cameraZ = 0.0f;
         animator = new Animator(myCanvas);
         Thread thread =
                 new Thread(new Runnable() {
@@ -114,22 +161,25 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         int proj_loc = gl.glGetUniformLocation(rendering_program, "proj_matrix");
 
         float aspect = myCanvas.getWidth() / myCanvas.getHeight();
-        Matrix3D pMat = perspective(50.0f, aspect, 0.1f, 1000.0f);
+        Matrix3D pMat = perspective(30.0f, aspect, 0.1f, 10000.0f);
 
-
+        MatrixStack mvStack = new MatrixStack(10);
+        // --------------------------- CAMERA
         mvStack.pushMatrix();
+        mvStack.rotate(-90, 1, 0, 0);
         mvStack.translate(-cameraX, -cameraY, -cameraZ);
-        mvStack.translate(0, 0, -zoom);
-        double amt = (double) (System.currentTimeMillis() % 360000) / 1000.0;
+        mvStack.translate(strafe, -zoom, 0);
 
+        double orbitSpeed[] = new double[15];
+        for (int i = 1; i < 15; i++) {
+            orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * i);
+        }
 
         // ----------------------   == sun
         mvStack.pushMatrix();
-        mvStack.translate(skyBoxLocX, skyBoxLocY, skyBoxLocZ);
-        mvStack.scale(2, 2, 2);
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0,
-                (System.currentTimeMillis() % 3600) / 10.0,
-                (System.currentTimeMillis() % 3600) / 10.0, 0.0);
+        mvStack.translate(0, 0, 0);
+        mvStack.scale(sunSize, sunSize, sunSize);
+        mvStack.rotate((System.currentTimeMillis() % 3600 / 10000), 0, 1, 0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -138,13 +188,29 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
-        //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         mvStack.popMatrix();
-
-        //-----------------------  cube == planet
+        //-----------------------   == Mercury
         mvStack.pushMatrix();
-        mvStack.translate(Math.sin(amt) * 10f, 0.0f, Math.cos(amt) * 10f);
+        mvStack.translate(Math.sin(orbitSpeed[9]) * mercuryDistance, 0.0f, Math.cos(orbitSpeed[9]) * mercuryDistance);
+        mvStack.scale(mercurySize, mercurySize, mercurySize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 20.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        mvStack.popMatrix();
+        mvStack.popMatrix(); //poping Mercury
+        //-----------------------   == venus
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(orbitSpeed[8]) * venusDistance, 0.0f, Math.cos(orbitSpeed[8]) * venusDistance);
+        mvStack.scale(venusSize, venusSize, venusSize);
         mvStack.pushMatrix();
         mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
@@ -158,12 +224,45 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         mvStack.popMatrix();
-
-        //-----------------------  smaller cube == moon
+        mvStack.popMatrix();// poping venus
+        //-----------------------   == earth
         mvStack.pushMatrix();
-        mvStack.translate(0.0f, Math.sin(amt) * 2, Math.cos(amt) * 2);
+        mvStack.translate(Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, Math.cos(orbitSpeed[7]) * earthDistance);
+        mvStack.scale(earthSize, earthSize, earthSize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        mvStack.popMatrix();
+        //-----------------------   == earth moon
+        mvStack.pushMatrix();
+        mvStack.scale(earthSize / 10, earthSize / 10, earthSize / 10);
+        mvStack.translate(0.0f, Math.sin(orbitSpeed[3]) * 2, Math.cos(orbitSpeed[3]) * 2);
         mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 0.0, 1.0);
-        mvStack.scale(0.25, 0.25, 0.25);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        mvStack.popMatrix();
+        mvStack.popMatrix();// poping earth
+        //-----------------------   == mars
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(orbitSpeed[6]) * marsDistance, 0.0f, Math.cos(orbitSpeed[6]) * marsDistance);
+        mvStack.scale(marsSize, marsSize, marsSize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -175,8 +274,106 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         mvStack.popMatrix();
+        mvStack.popMatrix();// poping mars
+
+        //-----------------------   == jupiter
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(orbitSpeed[5]) * jupiterDistance, 0.0f, Math.cos(orbitSpeed[5]) * jupiterDistance);
+        mvStack.scale(jupiterSize, jupiterSize, jupiterSize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         mvStack.popMatrix();
+        mvStack.popMatrix();// poping jupiter
+        //-----------------------   == saturn
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(orbitSpeed[4]) * saturnDistance, 0.0f, Math.cos(orbitSpeed[4]) * saturnDistance);
+        mvStack.scale(saturnSize, saturnSize, saturnSize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         mvStack.popMatrix();
+        mvStack.popMatrix();// poping saturn
+        //-----------------------   == uranus
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(orbitSpeed[3]) * uranusDistance, 0.0f, Math.cos(orbitSpeed[3]) * uranusDistance);
+        mvStack.scale(uranusSize, uranusSize, uranusSize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        mvStack.popMatrix();
+        mvStack.popMatrix();// poping uranus
+//-----------------------   == neptune
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(orbitSpeed[2]) * neptuneDistance, 0.0f, Math.cos(orbitSpeed[2]) * neptuneDistance);
+        mvStack.scale(neptuneSize, neptuneSize, neptuneSize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        mvStack.popMatrix();
+        mvStack.popMatrix();// poping neptune
+        //-----------------------   == pluto
+        mvStack.pushMatrix();
+        mvStack.translate(Math.sin(orbitSpeed[1]) * plutoDistance, 0.0f, Math.cos(orbitSpeed[1]) * plutoDistance);
+        mvStack.scale(plutoSize, plutoSize, plutoSize);
+        mvStack.pushMatrix();
+        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        //gl.glVertexAttrib4fv(1, noise);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        mvStack.popMatrix();
+        mvStack.popMatrix();// poping pluto
+
+
+        mvStack.popMatrix();// poping the sun!!!
+
+
+
+
+
 
     }
 
@@ -350,7 +547,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private class zoomIn extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Ass2.zoom -= 1.0f;
+            Ass2.zoom += 1.0f;
             //System.out.println("zoom + 1.0");
         }
     }
@@ -358,7 +555,23 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private class zoomOut extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Ass2.zoom += 1.0f;
+            Ass2.zoom -= 1.0f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class strafeRight extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.strafe += 1.0f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class strafeLeft extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.strafe -= 1.0f;
             //System.out.println("zoom - 1.0");
         }
     }
