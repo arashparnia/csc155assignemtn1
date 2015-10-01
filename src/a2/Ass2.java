@@ -5,7 +5,6 @@ import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
-import com.jogamp.opengl.math.Quaternion;
 import graphicslib3D.GLSLUtils;
 import graphicslib3D.Matrix3D;
 import graphicslib3D.MatrixStack;
@@ -68,6 +67,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     public static float zoom = 0.0f;
+    public static float pan = 0.0f;
+    public static float pitch = 0.0f;
     public static float strafe = 0.0f;
     public static boolean axis = true;
     private Dimension dimention = new Dimension(1000, 1000);
@@ -76,8 +77,6 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private int vao[] = new int[1];
     private int vbo[] = new int[3];
     private float cameraX, cameraY, cameraZ;
-    private float cubeLocX, cubeLocY, cubeLocZ;
-    private float skyBoxLocX, skyBoxLocY, skyBoxLocZ;
     private int rendering_program;
     private int VAO[] = new int[1];
     private GLSLUtils util = new GLSLUtils();
@@ -97,29 +96,49 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         KeyStroke spaceKey = KeyStroke.getKeyStroke("SPACE");
         imap.put(spaceKey, "space");
-        setAxis setaxis = new setAxis();
+        SetAxis setaxis = new SetAxis();
         amap.put("space", setaxis);
 
-        KeyStroke upKey = KeyStroke.getKeyStroke('w');
-        imap.put(upKey, "zoomin");
-        zoomIn zoomin = new zoomIn();
+        KeyStroke wKey = KeyStroke.getKeyStroke('w');
+        imap.put(wKey, "zoomin");
+        ZoomIn zoomin = new ZoomIn();
         amap.put("zoomin", zoomin);
 
-        KeyStroke downKey = KeyStroke.getKeyStroke('s');
-        imap.put(downKey, "zoomout");
-        zoomOut zoomout = new zoomOut();
+        KeyStroke sKey = KeyStroke.getKeyStroke('s');
+        imap.put(sKey, "zoomout");
+        ZoomOut zoomout = new ZoomOut();
         amap.put("zoomout", zoomout);
 
-        KeyStroke rightKey = KeyStroke.getKeyStroke('d');
-        imap.put(rightKey, "straferight");
-        strafeRight straferight = new strafeRight();
+        KeyStroke dKey = KeyStroke.getKeyStroke('d');
+        imap.put(dKey, "straferight");
+        StrafeRight straferight = new StrafeRight();
         amap.put("straferight", straferight);
 
-        KeyStroke leftKey = KeyStroke.getKeyStroke('a');
-        imap.put(leftKey, "strafeleft");
-        strafeLeft strafeleft = new strafeLeft();
+        KeyStroke aKey = KeyStroke.getKeyStroke('a');
+        imap.put(aKey, "strafeleft");
+        StrafeLeft strafeleft = new StrafeLeft();
         amap.put("strafeleft", strafeleft);
 
+        KeyStroke upKey = KeyStroke.getKeyStroke("UP");
+        imap.put(upKey, "pitchup");
+        PitchUP pitchup = new PitchUP();
+        amap.put("pitchup", pitchup);
+
+        KeyStroke downKey = KeyStroke.getKeyStroke("DOWN");
+        imap.put(downKey, "pitchdown");
+        PitchDown pitchdown = new PitchDown();
+        amap.put("pitchdown", pitchdown);
+
+        KeyStroke rightKey = KeyStroke.getKeyStroke("RIGHT");
+        imap.put(rightKey, "panright");
+        PanRight panright = new PanRight();
+        amap.put("panright", panright);
+
+        KeyStroke leftKey = KeyStroke.getKeyStroke("LEFT");
+        imap.put(leftKey, "panleft");
+        PanLeft panleft = new PanLeft();
+        amap.put("panleft", panleft);
+        
         setTitle("Assignment 2 CSC155");
         setSize(dimention);
         this.addMouseWheelListener(this);
@@ -172,11 +191,12 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         MatrixStack mvStack = new MatrixStack(10);
         // --------------------------- CAMERA
         mvStack.pushMatrix();
-        mvStack.rotate(-45, 1, 0, 0);
+        //mvStack.rotate(-45, 1, 0, 0);
         mvStack.translate(-cameraX, -cameraY, -cameraZ);
-        mvStack.translate(strafe, -zoom, zoom);
-        //mvStack.r
-        Quaternion q = new Quaternion();
+        mvStack.translate(-strafe, 0, zoom);
+        mvStack.rotate(pitch, 1, 0, 0);
+        mvStack.rotate(pan, 0, 1, 0);
+        //Quaterni q = new Quaternion();//ben botto
         double orbitSpeed[] = new double[15];
         for (int i = 1; i < 15; i++) {
             orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * i);
@@ -594,7 +614,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     }
 
-    private class zoomIn extends AbstractAction {
+    private class ZoomIn extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
             Ass2.zoom += 5.0f;
@@ -602,7 +622,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
     }
 
-    private class zoomOut extends AbstractAction {
+    private class ZoomOut extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
             Ass2.zoom -= 5.0f;
@@ -610,7 +630,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
     }
 
-    private class strafeRight extends AbstractAction {
+    private class StrafeRight extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
             Ass2.strafe += 5.0f;
@@ -618,7 +638,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
     }
 
-    private class strafeLeft extends AbstractAction {
+    private class StrafeLeft extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
             Ass2.strafe -= 5.0f;
@@ -626,7 +646,39 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
     }
 
-    private class setAxis extends AbstractAction {
+    private class PanLeft extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.pan -= 1.0f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class PanRight extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.pan += 5.0f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class PitchUP extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.pitch += 1.0f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class PitchDown extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.pitch -= 5.0f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class SetAxis extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (Ass2.axis == true) {
