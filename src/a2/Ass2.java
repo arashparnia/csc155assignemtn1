@@ -5,6 +5,7 @@ import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.math.Quaternion;
 import graphicslib3D.GLSLUtils;
 import graphicslib3D.Matrix3D;
 import graphicslib3D.MatrixStack;
@@ -68,6 +69,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     public static float zoom = 0.0f;
     public static float strafe = 0.0f;
+    public static boolean axis = true;
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
 
@@ -82,7 +84,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private float upDown = 0.0f;
     private boolean animated = true;
     private Animator animator;
-    private boolean autozoom = true;
+
 
     private Random rand;
 
@@ -92,6 +94,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
         InputMap imap = this.getRootPane().getInputMap(mapName);
         ActionMap amap = this.getRootPane().getActionMap();
+
+        KeyStroke spaceKey = KeyStroke.getKeyStroke("SPACE");
+        imap.put(spaceKey, "space");
+        setAxis setaxis = new setAxis();
+        amap.put("space", setaxis);
 
         KeyStroke upKey = KeyStroke.getKeyStroke('w');
         imap.put(upKey, "zoomin");
@@ -162,19 +169,62 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         float aspect = myCanvas.getWidth() / myCanvas.getHeight();
         Matrix3D pMat = perspective(30.0f, aspect, 0.1f, 10000.0f);
-
         MatrixStack mvStack = new MatrixStack(10);
         // --------------------------- CAMERA
         mvStack.pushMatrix();
-        mvStack.rotate(-90, 1, 0, 0);
+        mvStack.rotate(-45, 1, 0, 0);
         mvStack.translate(-cameraX, -cameraY, -cameraZ);
-        mvStack.translate(strafe, -zoom, 0);
-
+        mvStack.translate(strafe, -zoom, zoom);
+        //mvStack.r
+        Quaternion q = new Quaternion();
         double orbitSpeed[] = new double[15];
         for (int i = 1; i < 15; i++) {
             orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * i);
         }
-
+        if (axis) {
+            // ----------------------   == X-AXIS
+            mvStack.pushMatrix();
+            mvStack.translate(0, 0, 0);
+            mvStack.scale(1000, 0.01, 0.01);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+            gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+            gl.glEnableVertexAttribArray(0);
+            gl.glEnable(GL_CULL_FACE);
+            gl.glFrontFace(GL_CCW);
+            gl.glEnable(GL_DEPTH_TEST);
+            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+            mvStack.popMatrix();
+            // ----------------------   == Y-AXIS
+            mvStack.pushMatrix();
+            mvStack.translate(0, 0, 0);
+            mvStack.scale(0.01, 1000, 0.01);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+            gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+            gl.glEnableVertexAttribArray(0);
+            gl.glEnable(GL_CULL_FACE);
+            gl.glFrontFace(GL_CCW);
+            gl.glEnable(GL_DEPTH_TEST);
+            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+            mvStack.popMatrix();
+            // ----------------------   == Z-AXIS
+            mvStack.pushMatrix();
+            mvStack.translate(0, 0, 0);
+            mvStack.scale(0.01, 0.01, 1000);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+            gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+            gl.glEnableVertexAttribArray(0);
+            gl.glEnable(GL_CULL_FACE);
+            gl.glFrontFace(GL_CCW);
+            gl.glEnable(GL_DEPTH_TEST);
+            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+            mvStack.popMatrix();
+        }
         // ----------------------   == sun
         mvStack.pushMatrix();
         mvStack.translate(0, 0, 0);
@@ -379,7 +429,6 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     private void setupVertices(GL4 gl) {
-
         Vertex3D[] vertices = mySphere.getVertices();
         int[] indices = mySphere.getIndices();
 
@@ -413,6 +462,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
         FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
     }
 
 
@@ -547,7 +597,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private class zoomIn extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Ass2.zoom += 1.0f;
+            Ass2.zoom += 5.0f;
             //System.out.println("zoom + 1.0");
         }
     }
@@ -555,7 +605,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private class zoomOut extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Ass2.zoom -= 1.0f;
+            Ass2.zoom -= 5.0f;
             //System.out.println("zoom - 1.0");
         }
     }
@@ -563,7 +613,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private class strafeRight extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Ass2.strafe += 1.0f;
+            Ass2.strafe += 5.0f;
             //System.out.println("zoom - 1.0");
         }
     }
@@ -571,7 +621,19 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private class strafeLeft extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Ass2.strafe -= 1.0f;
+            Ass2.strafe -= 5.0f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class setAxis extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (Ass2.axis == true) {
+                Ass2.axis = false;
+            } else if (Ass2.axis == false) {
+                Ass2.axis = true;
+            }
             //System.out.println("zoom - 1.0");
         }
     }
