@@ -5,9 +5,10 @@ import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.math.Quaternion;
+import com.jogamp.opengl.util.PMVMatrix;
 import graphicslib3D.GLSLUtils;
 import graphicslib3D.Matrix3D;
-import graphicslib3D.MatrixStack;
 import graphicslib3D.Vertex3D;
 import graphicslib3D.shape.Sphere;
 
@@ -188,14 +189,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         float aspect = myCanvas.getWidth() / myCanvas.getHeight();
         Matrix3D pMat = perspective(30.0f, aspect, 0.1f, 10000.0f);
-        MatrixStack mvStack = new MatrixStack(10);
+        PMVMatrix mvStack = new PMVMatrix();
         // --------------------------- CAMERA
-        mvStack.pushMatrix();
-        //mvStack.rotate(-45, 1, 0, 0);
-        mvStack.translate(-cameraX, -cameraY, -cameraZ);
-        mvStack.translate(-strafe, 0, zoom);
-        mvStack.rotate(pitch, 1, 0, 0);
-        mvStack.rotate(pan, 0, 1, 0);
+        mvStack.glPushMatrix();
+        //mvStack.glRotate(new Quaternion(-45, 1, 0, 0);
+        mvStack.glRotate(new Quaternion(new Quaternion(pitch, 1, 0, 0)));
+        mvStack.glRotate(new Quaternion(pan, 0, 1, 0));
+        mvStack.glTranslatef(-cameraX, -cameraY, -200);
+        mvStack.glTranslatef(-strafe, 0, zoom);
+
         //Quaterni q = new Quaternion();//ben botto
         double orbitSpeed[] = new double[15];
         for (int i = 1; i < 15; i++) {
@@ -203,10 +205,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
         if (axis) {
             // ----------------------   == X-AXIS
-            mvStack.pushMatrix();
-            mvStack.translate(0, 0, 0);
-            mvStack.scale(1000, 0.01, 0.01);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+            mvStack.glPushMatrix();
+            mvStack.glTranslatef(0, 0, 0);
+            mvStack.glScalef(1000f, 0.01f, 0.01f);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
             gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
             gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -215,12 +217,12 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glFrontFace(GL_CCW);
             gl.glEnable(GL_DEPTH_TEST);
             gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-            mvStack.popMatrix();
+            mvStack.glPopMatrix();
             // ----------------------   == Y-AXIS
-            mvStack.pushMatrix();
-            mvStack.translate(0, 0, 0);
-            mvStack.scale(0.01, 1000, 0.01);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+            mvStack.glPushMatrix();
+            mvStack.glTranslatef(0, 0, 0);
+            mvStack.glScalef(0.01f, 1000f, 0.01f);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
             gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
             gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -229,12 +231,12 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glFrontFace(GL_CCW);
             gl.glEnable(GL_DEPTH_TEST);
             gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-            mvStack.popMatrix();
+            mvStack.glPopMatrix();
             // ----------------------   == Z-AXIS
-            mvStack.pushMatrix();
-            mvStack.translate(0, 0, 0);
-            mvStack.scale(0.01, 0.01, 1000);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+            mvStack.glPushMatrix();
+            mvStack.glTranslatef(0, 0, 0);
+            mvStack.glScalef(0.01f, 0.01f, 1000f);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
             gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
             gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -243,14 +245,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glFrontFace(GL_CCW);
             gl.glEnable(GL_DEPTH_TEST);
             gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-            mvStack.popMatrix();
+            mvStack.glPopMatrix();
         }
         // ----------------------   == sun
-        mvStack.pushMatrix();
-        mvStack.translate(0, 0, 0);
-        mvStack.scale(sunSize, sunSize, sunSize);
-        mvStack.rotate((System.currentTimeMillis() % 3600 / 10000), 0, 1, 0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef(0, 0, 0);
+        mvStack.glScalef(sunSize, sunSize, sunSize);
+        mvStack.glRotate(new Quaternion((System.currentTimeMillis() % 3600 / 10000), 0, 1, 0));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -259,14 +261,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
+        mvStack.glPopMatrix();
         //-----------------------   == Mercury
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[9]) * mercuryDistance, 0.0f, Math.cos(orbitSpeed[9]) * mercuryDistance);
-        mvStack.scale(mercurySize, mercurySize, mercurySize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 20.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[9]) * mercuryDistance, 0.0f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance);
+        mvStack.glScalef(mercurySize, mercurySize, mercurySize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -275,15 +277,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix(); //poping Mercury
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix(); //poping Mercury
         //-----------------------   == venus
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[8]) * venusDistance, 0.0f, Math.cos(orbitSpeed[8]) * venusDistance);
-        mvStack.scale(venusSize, venusSize, venusSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[8]) * venusDistance, 0.0f, (float) Math.cos(orbitSpeed[8]) * venusDistance);
+        mvStack.glScalef(venusSize, venusSize, venusSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -293,15 +295,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping venus
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping venus
         //-----------------------   == earth
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, Math.cos(orbitSpeed[7]) * earthDistance);
-        mvStack.scale(earthSize, earthSize, earthSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, (float) Math.cos(orbitSpeed[7]) * earthDistance);
+        mvStack.glScalef(earthSize, earthSize, earthSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -310,13 +312,13 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
+        mvStack.glPopMatrix();
         //-----------------------   == earth moon
-        mvStack.pushMatrix();
-        mvStack.scale(earthSize / 10, earthSize / 10, earthSize / 10);
-        mvStack.translate(0.0f, Math.sin(orbitSpeed[3]) * 2, Math.cos(orbitSpeed[3]) * 2);
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 0.0, 1.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glScalef(earthSize / 10, earthSize / 10, earthSize / 10);
+        mvStack.glTranslatef(0.0f, (float) Math.sin(orbitSpeed[3]) * 2, (float) Math.cos(orbitSpeed[3]) * 2);
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 10.0), 0.0f, 0.0f, 1.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -325,15 +327,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping earth
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping earth
         //-----------------------   == mars
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[6]) * marsDistance, 0.0f, Math.cos(orbitSpeed[6]) * marsDistance);
-        mvStack.scale(marsSize, marsSize, marsSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[6]) * marsDistance, 0.0f, (float) Math.cos(orbitSpeed[6]) * marsDistance);
+        mvStack.glScalef(marsSize, marsSize, marsSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -343,16 +345,16 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping mars
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping mars
 
         //-----------------------   == jupiter
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[5]) * jupiterDistance, 0.0f, Math.cos(orbitSpeed[5]) * jupiterDistance);
-        mvStack.scale(jupiterSize, jupiterSize, jupiterSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.0f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance);
+        mvStack.glScalef(jupiterSize, jupiterSize, jupiterSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -362,15 +364,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping jupiter
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping jupiter
         //-----------------------   == saturn
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[4]) * saturnDistance, 0.0f, Math.cos(orbitSpeed[4]) * saturnDistance);
-        mvStack.scale(saturnSize, saturnSize, saturnSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.0f, (float) Math.cos(orbitSpeed[4]) * saturnDistance);
+        mvStack.glScalef(saturnSize, saturnSize, saturnSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -380,15 +382,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping saturn
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping saturn
         //-----------------------   == uranus
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[3]) * uranusDistance, 0.0f, Math.cos(orbitSpeed[3]) * uranusDistance);
-        mvStack.scale(uranusSize, uranusSize, uranusSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.0f, (float) Math.cos(orbitSpeed[3]) * uranusDistance);
+        mvStack.glScalef(uranusSize, uranusSize, uranusSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -398,15 +400,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping uranus
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping uranus
 //-----------------------   == neptune
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[2]) * neptuneDistance, 0.0f, Math.cos(orbitSpeed[2]) * neptuneDistance);
-        mvStack.scale(neptuneSize, neptuneSize, neptuneSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[2]) * neptuneDistance, 0.0f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance);
+        mvStack.glScalef(neptuneSize, neptuneSize, neptuneSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -416,15 +418,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping neptune
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping neptune
         //-----------------------   == pluto
-        mvStack.pushMatrix();
-        mvStack.translate(Math.sin(orbitSpeed[1]) * plutoDistance, 0.0f, Math.cos(orbitSpeed[1]) * plutoDistance);
-        mvStack.scale(plutoSize, plutoSize, plutoSize);
-        mvStack.pushMatrix();
-        mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 0.0, 1.0, 0.0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        mvStack.glPushMatrix();
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[1]) * plutoDistance, 0.0f, (float) Math.cos(orbitSpeed[1]) * plutoDistance);
+        mvStack.glScalef(plutoSize, plutoSize, plutoSize);
+        mvStack.glPushMatrix();
+        mvStack.glRotate(new Quaternion((System.currentTimeMillis() % 3600) / 10.0f, 0.0f, 1.0f, 0.0f));
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -434,16 +436,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping pluto
+        mvStack.glPopMatrix();
+        mvStack.glPopMatrix();// poping pluto
 
-
-        mvStack.popMatrix();// poping the sun!!!
-
-
-
-
-
+        mvStack.glPopMatrix();// poping the sun!!!
 
     }
 
@@ -487,7 +483,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     private Matrix3D perspective(float fovy, float aspect, float n, float f) {
-        float q = 1.0f / ((float) Math.tan(Math.toRadians(0.5f * fovy)));
+        float q = 1.0f / (float) Math.tan((float) Math.toRadians(0.5f * fovy));
         float A = q / aspect;
         float B = (n + f) / (n - f);
         float C = (2.0f * n * f) / (n - f);
