@@ -91,62 +91,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private Sphere mySphere = new Sphere(100);
 
     public Ass2() {
-        int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
-        InputMap imap = this.getRootPane().getInputMap(mapName);
-        ActionMap amap = this.getRootPane().getActionMap();
-
-        KeyStroke spaceKey = KeyStroke.getKeyStroke("SPACE");
-        imap.put(spaceKey, "space");
-        SetAxis setaxis = new SetAxis();
-        amap.put("space", setaxis);
-
-        KeyStroke wKey = KeyStroke.getKeyStroke('w');
-        imap.put(wKey, "zoomin");
-        ZoomIn zoomin = new ZoomIn();
-        amap.put("zoomin", zoomin);
-
-        KeyStroke sKey = KeyStroke.getKeyStroke('s');
-        imap.put(sKey, "zoomout");
-        ZoomOut zoomout = new ZoomOut();
-        amap.put("zoomout", zoomout);
-
-        KeyStroke dKey = KeyStroke.getKeyStroke('d');
-        imap.put(dKey, "straferight");
-        StrafeRight straferight = new StrafeRight();
-        amap.put("straferight", straferight);
-
-        KeyStroke aKey = KeyStroke.getKeyStroke('a');
-        imap.put(aKey, "strafeleft");
-        StrafeLeft strafeleft = new StrafeLeft();
-        amap.put("strafeleft", strafeleft);
-
-        KeyStroke upKey = KeyStroke.getKeyStroke("UP");
-        imap.put(upKey, "pitchup");
-        PitchUP pitchup = new PitchUP();
-        amap.put("pitchup", pitchup);
-
-        KeyStroke downKey = KeyStroke.getKeyStroke("DOWN");
-        imap.put(downKey, "pitchdown");
-        PitchDown pitchdown = new PitchDown();
-        amap.put("pitchdown", pitchdown);
-
-        KeyStroke rightKey = KeyStroke.getKeyStroke("RIGHT");
-        imap.put(rightKey, "panright");
-        PanRight panright = new PanRight();
-        amap.put("panright", panright);
-
-        KeyStroke leftKey = KeyStroke.getKeyStroke("LEFT");
-        imap.put(leftKey, "panleft");
-        PanLeft panleft = new PanLeft();
-        amap.put("panleft", panleft);
-        
         setTitle("Assignment 2 CSC155");
         setSize(dimention);
         this.addMouseWheelListener(this);
+
         myCanvas = new GLCanvas();
         myCanvas.addGLEventListener(this);
         rand = new Random();
         add(myCanvas);
+        this.addKeyListener(this);
         setVisible(true);
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -158,13 +111,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     public void init(GLAutoDrawable drawable) {
-        this.getRootPane().requestFocus();
+        //this.getRootPane().requestFocus();
         GL4 gl = (GL4) drawable.getGL();
         rendering_program = createShaderPrograms(drawable);
         setupVertices(gl);
-        cameraX = 0.0f;
-        cameraY = 0.0f;
-        cameraZ = 0.0f;
         animator = new Animator(myCanvas);
         Thread thread =
                 new Thread(new Runnable() {
@@ -187,29 +137,46 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         int mv_loc = gl.glGetUniformLocation(rendering_program, "mv_matrix");
         int proj_loc = gl.glGetUniformLocation(rendering_program, "proj_matrix");
 
-        float aspect = myCanvas.getWidth() / myCanvas.getHeight();
-        Matrix3D pMat = perspective(30.0f, aspect, 0.1f, 10000.0f);
-        PMVMatrix mvStack = new PMVMatrix();
-        // --------------------------- CAMERA
-        mvStack.glPushMatrix();
-        //mvStack.glRotate(new Quaternion(-45, 1, 0, 0);
-        mvStack.glRotate(new Quaternion(new Quaternion(pitch, 1, 0, 0)));
-        mvStack.glRotate(new Quaternion(pan, 0, 1, 0));
-        mvStack.glTranslatef(-cameraX, -cameraY, -200);
-        mvStack.glTranslatef(-strafe, 0, zoom);
-
-        //Quaterni q = new Quaternion();//ben botto
         double orbitSpeed[] = new double[15];
         for (int i = 1; i < 15; i++) {
             orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * i);
         }
+        float aspect = myCanvas.getWidth() / myCanvas.getHeight();
+        //Matrix3D pMat = perspective(30.0f, aspect, 0.1f, 10000.0f);
+        PMVMatrix mvStack = new PMVMatrix();
+        mvStack.glLoadIdentity();
+        mvStack.gluPerspective(60f, aspect, 0.1f, 1000.0f);
+        // --------------------------- CAMERA
+        // Perspective.
+
+        //GLU glu = new GLU();
+        float widthHeightRatio = (float) getWidth() / (float) getHeight();
+        //glu.gluPerspective(45, widthHeightRatio, 1, 1000);
+        //glu.gluLookAt(0, 0, 200, 0, 0, 0, 0, 1, 0);
+
+        mvStack.glPushMatrix();
+        mvStack.gluLookAt(
+                9, 0, 9,
+                (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
+
+                0, 1, 0);
+
+        // mvStack.gluLookAt(200,200,200,0,0,0,0,1,0);
+        //mvStack.glRotate(new Quaternion(-45, 1, 0, 0));
+        //mvStack.glRotate(new Quaternion(pitch, 1, 0, 0));
+        //mvStack.glRotatef(pan, 0, 1, 0);
+        //mvStack.glTranslatef(0, 0, 0);
+        //mvStack.glTranslatef(-strafe, 0, -zoom);
+
+
+
         if (axis) {
             // ----------------------   == X-AXIS
             mvStack.glPushMatrix();
             mvStack.glTranslatef(0, 0, 0);
-            mvStack.glScalef(1000f, 0.01f, 0.01f);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            mvStack.glScalef(1000f, 0.001f, 0.001f);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+            gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
             gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
             gl.glEnableVertexAttribArray(0);
@@ -221,9 +188,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             // ----------------------   == Y-AXIS
             mvStack.glPushMatrix();
             mvStack.glTranslatef(0, 0, 0);
-            mvStack.glScalef(0.01f, 1000f, 0.01f);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            mvStack.glScalef(0.001f, 1000f, 0.001f);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+            gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
             gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
             gl.glEnableVertexAttribArray(0);
@@ -235,9 +202,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             // ----------------------   == Z-AXIS
             mvStack.glPushMatrix();
             mvStack.glTranslatef(0, 0, 0);
-            mvStack.glScalef(0.01f, 0.01f, 1000f);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            mvStack.glScalef(0.001f, 0.001f, 1000f);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+            gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
             gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
             gl.glEnableVertexAttribArray(0);
@@ -252,8 +219,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glTranslatef(0, 0, 0);
         mvStack.glScalef(sunSize, sunSize, sunSize);
         mvStack.glRotate(new Quaternion((System.currentTimeMillis() % 3600 / 10000), 0, 1, 0));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -268,8 +235,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(mercurySize, mercurySize, mercurySize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -285,8 +252,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(venusSize, venusSize, venusSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -303,8 +270,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(earthSize, earthSize, earthSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -318,8 +285,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(earthSize / 10, earthSize / 10, earthSize / 10);
         mvStack.glTranslatef(0.0f, (float) Math.sin(orbitSpeed[3]) * 2, (float) Math.cos(orbitSpeed[3]) * 2);
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 10.0), 0.0f, 0.0f, 1.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -335,8 +302,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(marsSize, marsSize, marsSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -354,8 +321,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(jupiterSize, jupiterSize, jupiterSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -372,8 +339,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(saturnSize, saturnSize, saturnSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -390,8 +357,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(uranusSize, uranusSize, uranusSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -408,8 +375,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(neptuneSize, neptuneSize, neptuneSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -426,8 +393,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glScalef(plutoSize, plutoSize, plutoSize);
         mvStack.glPushMatrix();
         mvStack.glRotate(new Quaternion((System.currentTimeMillis() % 3600) / 10.0f, 0.0f, 1.0f, 0.0f));
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf().array(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -498,6 +465,72 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         return rt;
     }
 
+    //    private Matrix3D BuildCameraMatrix( Vector3D rot,Vector3D pos )
+//    {
+//        Matrix4 matCam = new Matrix4();
+//
+//       /* ROTATION MATRIX */
+//        Vector3D vUp      = new Vector3D(0,1,0);
+//        Vector3D vForward = new Vector3D(0,0,1);
+//        Vector3D vRight   = new Vector3D(1,0,0);
+//
+//
+//        vForward = Vector3D.rotatey( vForward, rot.m_y );
+//        vRight   = Vector3D.rotatey( vRight, rot.m_y );
+//
+//        //vUp = Vector3.cross( vRight, vForward );
+//        //vUp = Vector3.normalize(vRight);
+//
+//        matCam.m[0][0]=vRight.m_x;
+//        matCam.m[1][0]=vRight.m_y;
+//        matCam.m[2][0]=vRight.m_z;
+//        matCam.m[3][0]= 0;
+//
+//        matCam.m[0][1]=vUp.m_x;
+//        matCam.m[1][1]=vUp.m_y;
+//        matCam.m[2][1]=vUp.m_z;
+//        matCam.m[3][1]= 0;
+//
+//        matCam.m[0][2]=vForward.m_x;
+//        matCam.m[1][2]=vForward.m_y;
+//        matCam.m[2][2]=vForward.m_z;
+//        matCam.m[3][2]= 0;
+//
+//
+//        matCam.m[0][3]=0;
+//        matCam.m[1][3]=0;
+//        matCam.m[2][3]=0;
+//        matCam.m[3][3]= 1;
+//
+//       /* TRANSLATION MATRIX */
+//        Matrix4 vPos = new Matrix4();
+//        vPos = Matrix4.identity(vPos);
+//        vPos.m[3][0] = -pos.m_x;
+//        vPos.m[3][1] = -pos.m_y;
+//        vPos.m[3][2] = -pos.m_z;
+//
+//       /* Combine Rot and Trans Matrix to create the Camera Matrix */
+//        matCam = Matrix4.multiply( vPos, matCam );
+//
+//       /*
+//        | Ux  Vx  Nx |
+//        | Uy  Vy  Ny |
+//        | Uz  Vz  Nz |
+//
+//
+//        Where U is the "right" vector, V the "up" vector and N the
+//        direction you are looking.
+//       */
+//
+//        return matCam;
+//    }// End BuildCameraMatrix(..)
+//
+//
+//    //  Camera Matrix
+//    //  | right.x    up.x     forward.x     0 |
+//    //  | right.y    up.y     forward.y     0 |
+//    //  | right.z    up.z     forward.z     0 |  ; (rotation4x4)
+//    //  | 0          0            0         1 |
     private int createShaderPrograms(GLAutoDrawable drawable) {
         int[] vertCompiled = new int[1];
         int[] fragCompiled = new int[1];
@@ -536,8 +569,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         gl.glCompileShader(fShader);
         GLSLUtils.printOpenGLError(drawable);  // can use returned boolean
-        gl.glGetShaderiv(fShader, GL4.GL_COMPILE_STATUS, vertCompiled, 0);
-        if (vertCompiled[0] == 1) {
+        gl.glGetShaderiv(fShader, GL4.GL_COMPILE_STATUS, fragCompiled, 0);
+        if (fragCompiled[0] == 1) {
             System.out.println("fragment compilation success");
         } else {
             System.out.println("fragment compilation failed");
@@ -602,87 +635,175 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     @Override
     public void keyPressed(KeyEvent e) {
-
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_W: {
+                zoom += 1f;
+                break;
+            }
+            case KeyEvent.VK_S: {
+                zoom -= 1f;
+                break;
+            }
+            case KeyEvent.VK_A: {
+                strafe -= 1f;
+                break;
+            }
+            case KeyEvent.VK_D: {
+                strafe += 1f;
+                break;
+            }
+            case KeyEvent.VK_RIGHT: {
+                pan += 1f;
+                break;
+            }
+            case KeyEvent.VK_LEFT: {
+                pan -= 1f;
+                break;
+            }
+            case KeyEvent.VK_UP: {
+                pitch += 1f;
+                break;
+            }
+            case KeyEvent.VK_DOWN: {
+                pitch -= 1f;
+                break;
+            }
+            case KeyEvent.VK_SPACE: {
+                axis = !axis;
+                break;
+            }
+        }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
 
     }
-
-    private class ZoomIn extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.zoom += 5.0f;
-            //System.out.println("zoom + 1.0");
-        }
-    }
-
-    private class ZoomOut extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.zoom -= 5.0f;
-            //System.out.println("zoom - 1.0");
-        }
-    }
-
-    private class StrafeRight extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.strafe += 5.0f;
-            //System.out.println("zoom - 1.0");
-        }
-    }
-
-    private class StrafeLeft extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.strafe -= 5.0f;
-            //System.out.println("zoom - 1.0");
-        }
-    }
-
-    private class PanLeft extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.pan -= 1.0f;
-            //System.out.println("zoom - 1.0");
-        }
-    }
-
-    private class PanRight extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.pan += 5.0f;
-            //System.out.println("zoom - 1.0");
-        }
-    }
-
-    private class PitchUP extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.pitch += 1.0f;
-            //System.out.println("zoom - 1.0");
-        }
-    }
-
-    private class PitchDown extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.pitch -= 5.0f;
-            //System.out.println("zoom - 1.0");
-        }
-    }
-
-    private class SetAxis extends AbstractAction {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (Ass2.axis == true) {
-                Ass2.axis = false;
-            } else if (Ass2.axis == false) {
-                Ass2.axis = true;
-            }
-            //System.out.println("zoom - 1.0");
-        }
-    }
+//
+//    private class ZoomIn extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.zoom += 5.0f;
+//            //System.out.println("zoom + 1.0");
+//        }
+//    }
+//
+//    private class ZoomOut extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.zoom -= 5.0f;
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//
+//    private class StrafeRight extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.strafe += 5.0f;
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//
+//    private class StrafeLeft extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.strafe -= 5.0f;
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//
+//    private class PanLeft extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.pan -= 1.0f;
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//
+//    private class PanRight extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.pan += 5.0f;
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//
+//    private class PitchUP extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.pitch += 1.0f;
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//
+//    private class PitchDown extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            Ass2.pitch -= 5.0f;
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//
+//    private class SetAxis extends AbstractAction {
+//        @Override
+//        public void actionPerformed(ActionEvent e) {
+//            if (Ass2.axis == true) {
+//                Ass2.axis = false;
+//            } else if (Ass2.axis == false) {
+//                Ass2.axis = true;
+//            }
+//            //System.out.println("zoom - 1.0");
+//        }
+//    }
+//    private void keyMaping(){
+//        int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
+//        InputMap imap = this.getRootPane().getInputMap(mapName);
+//        ActionMap amap = this.getRootPane().getActionMap();
+//
+//        KeyStroke spaceKey = KeyStroke.getKeyStroke("SPACE");
+//        imap.put(spaceKey, "space");
+//        SetAxis setaxis = new SetAxis();
+//        amap.put("space", setaxis);
+//
+//        KeyStroke wKey = KeyStroke.getKeyStroke('w');
+//        imap.put(wKey, "zoomin");
+//        ZoomIn zoomin = new ZoomIn();
+//        amap.put("zoomin", zoomin);
+//
+//        KeyStroke sKey = KeyStroke.getKeyStroke('s');
+//        imap.put(sKey, "zoomout");
+//        ZoomOut zoomout = new ZoomOut();
+//        amap.put("zoomout", zoomout);
+//
+//        KeyStroke dKey = KeyStroke.getKeyStroke('d');
+//        imap.put(dKey, "straferight");
+//        StrafeRight straferight = new StrafeRight();
+//        amap.put("straferight", straferight);
+//
+//        KeyStroke aKey = KeyStroke.getKeyStroke('a');
+//        imap.put(aKey, "strafeleft");
+//        StrafeLeft strafeleft = new StrafeLeft();
+//        amap.put("strafeleft", strafeleft);
+//
+//        KeyStroke upKey = KeyStroke.getKeyStroke("UP");
+//        imap.put(upKey, "pitchup");
+//        PitchUP pitchup = new PitchUP();
+//        amap.put("pitchup", pitchup);
+//
+//        KeyStroke downKey = KeyStroke.getKeyStroke("DOWN");
+//        imap.put(downKey, "pitchdown");
+//        PitchDown pitchdown = new PitchDown();
+//        amap.put("pitchdown", pitchdown);
+//
+//        KeyStroke rightKey = KeyStroke.getKeyStroke("RIGHT");
+//        imap.put(rightKey, "panright");
+//        PanRight panright = new PanRight();
+//        amap.put("panright", panright);
+//
+//        KeyStroke leftKey = KeyStroke.getKeyStroke("LEFT");
+//        imap.put(leftKey, "panleft");
+//        PanLeft panleft = new PanLeft();
+//        amap.put("panleft", panleft);
+//
+//    }
 }
