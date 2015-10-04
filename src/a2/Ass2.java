@@ -154,10 +154,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         //glu.gluPerspective(45, widthHeightRatio, 1, 1000);
         //glu.gluLookAt(0, 0, 200, 0, 0, 0, 0, 1, 0);
 
-        mvStack.glPushMatrix();
+        // mvStack.glPushMatrix();
         mvStack.gluLookAt(
-                9, 0, 9,
-                (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
+                (float) Math.sin(orbitSpeed[7]) * earthDistance + strafe, 0.5f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
+                (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.00f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
 
                 0, 1, 0);
 
@@ -269,7 +269,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glTranslatef((float) Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, (float) Math.cos(orbitSpeed[7]) * earthDistance);
         mvStack.glScalef(earthSize, earthSize, earthSize);
         mvStack.glPushMatrix();
-        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        mvStack.glRotatef((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -282,9 +282,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glPopMatrix();
         //-----------------------   == earth moon
         mvStack.glPushMatrix();
-        mvStack.glScalef(earthSize / 10, earthSize / 10, earthSize / 10);
-        mvStack.glTranslatef(0.0f, (float) Math.sin(orbitSpeed[3]) * 2, (float) Math.cos(orbitSpeed[3]) * 2);
-        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 10.0), 0.0f, 0.0f, 1.0f));
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[1]) * 2, 0f, (float) Math.cos(orbitSpeed[1]) * 2);
+        mvStack.glScalef(earthSize / 3, earthSize / 3, earthSize / 3);
+        mvStack.glRotatef((float) ((float) (System.currentTimeMillis() % 3600) / 10.0), 0.0f, 0.0f, 1.0f);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -406,7 +406,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glPopMatrix();
         mvStack.glPopMatrix();// poping pluto
 
-        mvStack.glPopMatrix();// poping the sun!!!
+        // mvStack.glPopMatrix();// poping the sun!!!
 
     }
 
@@ -637,19 +637,19 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_W: {
-                zoom += 1f;
+                zoom += 0.1f;
                 break;
             }
             case KeyEvent.VK_S: {
-                zoom -= 1f;
+                zoom -= 0.1f;
                 break;
             }
             case KeyEvent.VK_A: {
-                strafe -= 1f;
+                strafe -= 0.1f;
                 break;
             }
             case KeyEvent.VK_D: {
-                strafe += 1f;
+                strafe += 0.1f;
                 break;
             }
             case KeyEvent.VK_RIGHT: {
