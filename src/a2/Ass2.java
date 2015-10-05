@@ -27,7 +27,7 @@ import static com.jogamp.opengl.GL4.*;
 public class Ass2 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener {
 
     //scaled at 10 billion
-    private static final float sunSize = 1.39f; //cm
+    private static final float sunSize = 10.39f; //cm
 
     private static final float mercurySize = 0.05f; //cm
     private static final float mercuryDistance = 5f; //57,909,000
@@ -71,8 +71,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     public static float pan = 0.0f;
     public static float pitch = 0.0f;
     public static float strafe = 0.0f;
-    public static boolean axis = true;
-    private Dimension dimention = new Dimension(1000, 1000);
+    public static boolean axis = false;
+    private Dimension dimention = new Dimension(1500, 1500);
     private GLCanvas myCanvas;
 
     private int vao[] = new int[1];
@@ -85,10 +85,18 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private boolean animated = true;
     private Animator animator;
 
-
     private Random rand;
 
-    private Sphere mySphere = new Sphere(100);
+    private Sphere mySphere = new Sphere(50);
+
+    private TextureReader tr = new TextureReader();
+    private int sunTexture;
+    private int earthTexture;
+    private int moonTexture;
+    private int marsTexture;
+    private int jupiterTexture;
+    private int saturnTexture;
+    private int[] samplers = new int[2];
 
     public Ass2() {
         setTitle("Assignment 2 CSC155");
@@ -115,6 +123,16 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         GL4 gl = (GL4) drawable.getGL();
         rendering_program = createShaderPrograms(drawable);
         setupVertices(gl);
+
+        int tx_loc = gl.glGetUniformLocation(rendering_program, "s");
+        gl.glGenSamplers(1, samplers, 0);
+        gl.glBindSampler(0, tx_loc);
+        sunTexture = tr.loadTexture(drawable, "textures/sunmap.jpg");
+        earthTexture = tr.loadTexture(drawable, "textures/earthmap1k.jpg");
+        moonTexture = tr.loadTexture(drawable, "textures/moonmap1k.jpg");
+        marsTexture = tr.loadTexture(drawable, "textures/marsmap1k.jpg");
+        jupiterTexture = tr.loadTexture(drawable, "textures/jupitermap.jpg");
+        saturnTexture = tr.loadTexture(drawable, "textures/saturnmap.jpg");
         animator = new Animator(myCanvas);
         Thread thread =
                 new Thread(new Runnable() {
@@ -154,19 +172,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         //glu.gluPerspective(45, widthHeightRatio, 1, 1000);
         //glu.gluLookAt(0, 0, 200, 0, 0, 0, 0, 1, 0);
 
-        // mvStack.glPushMatrix();
+
+//        mvStack.gluLookAt(
+//                (float) Math.sin(orbitSpeed[7]) * earthDistance + strafe, 0.5f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
+//                (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.00f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
+//                0, 1, 0);
         mvStack.gluLookAt(
-                (float) Math.sin(orbitSpeed[7]) * earthDistance + strafe, 0.5f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
-                (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.00f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
-
+                (float) Math.sin(orbitSpeed[5]) * jupiterDistance + strafe, 2f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance - zoom,
+                (float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.00f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance,
                 0, 1, 0);
-
-        // mvStack.gluLookAt(200,200,200,0,0,0,0,1,0);
-        //mvStack.glRotate(new Quaternion(-45, 1, 0, 0));
-        //mvStack.glRotate(new Quaternion(pitch, 1, 0, 0));
-        //mvStack.glRotatef(pan, 0, 1, 0);
-        //mvStack.glTranslatef(0, 0, 0);
-        //mvStack.glTranslatef(-strafe, 0, -zoom);
 
 
 
@@ -174,7 +188,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             // ----------------------   == X-AXIS
             mvStack.glPushMatrix();
             mvStack.glTranslatef(0, 0, 0);
-            mvStack.glScalef(1000f, 0.001f, 0.001f);
+            mvStack.glScalef(1000f, 0.01f, 0.01f);
             gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
             gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -188,7 +202,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             // ----------------------   == Y-AXIS
             mvStack.glPushMatrix();
             mvStack.glTranslatef(0, 0, 0);
-            mvStack.glScalef(0.001f, 1000f, 0.001f);
+            mvStack.glScalef(0.01f, 1000f, 0.01f);
             gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
             gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -202,7 +216,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             // ----------------------   == Z-AXIS
             mvStack.glPushMatrix();
             mvStack.glTranslatef(0, 0, 0);
-            mvStack.glScalef(0.001f, 0.001f, 1000f);
+            mvStack.glScalef(0.01f, 0.01f, 1000f);
             gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
             gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -218,12 +232,17 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glPushMatrix();
         mvStack.glTranslatef(0, 0, 0);
         mvStack.glScalef(sunSize, sunSize, sunSize);
-        mvStack.glRotate(new Quaternion((System.currentTimeMillis() % 3600 / 10000), 0, 1, 0));
+        mvStack.glRotatef(degreePerSec(0.001f), 0, 1, 0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, sunTexture);
+        //gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        //gl.glEnableVertexAttribArray(0);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -269,12 +288,18 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glTranslatef((float) Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, (float) Math.cos(orbitSpeed[7]) * earthDistance);
         mvStack.glScalef(earthSize, earthSize, earthSize);
         mvStack.glPushMatrix();
-        mvStack.glRotatef((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f);
+
+        mvStack.glRotatef(degreePerSec(0.1f), 0.0f, 1.0f, 0.0f);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        //gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, earthTexture);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -282,14 +307,19 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glPopMatrix();
         //-----------------------   == earth moon
         mvStack.glPushMatrix();
-        mvStack.glTranslatef((float) Math.sin(orbitSpeed[1]) * 2, 0f, (float) Math.cos(orbitSpeed[1]) * 2);
-        mvStack.glScalef(earthSize / 3, earthSize / 3, earthSize / 3);
-        mvStack.glRotatef((float) ((float) (System.currentTimeMillis() % 3600) / 10.0), 0.0f, 0.0f, 1.0f);
+        mvStack.glTranslatef((float) Math.sin(orbitSpeed[1] / 10) * 2, 0f, (float) Math.cos(orbitSpeed[1] / 10) * 2);
+        mvStack.glScalef(earthSize / 1.1f, earthSize / 1.1f, earthSize / 1.1f);
+        mvStack.glRotatef(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        //gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -305,7 +335,12 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        //gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, marsTexture);
         gl.glEnableVertexAttribArray(0);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
@@ -320,11 +355,16 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.glTranslatef((float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.0f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance);
         mvStack.glScalef(jupiterSize, jupiterSize, jupiterSize);
         mvStack.glPushMatrix();
-        mvStack.glRotate(new Quaternion((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f));
+        mvStack.glRotatef(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        //gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, jupiterTexture);
         gl.glEnableVertexAttribArray(0);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
@@ -342,7 +382,12 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, mvStack.glGetPMatrixf());
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        //gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, saturnTexture);
         gl.glEnableVertexAttribArray(0);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
@@ -595,6 +640,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
     }
 
+    private float degreePerSec(float rev) {
+        return (float) (System.currentTimeMillis() % 360000) / (1 / rev);
+    }
     public void dispose(GLAutoDrawable drawable) {
     }
 
