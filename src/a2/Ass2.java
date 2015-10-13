@@ -199,25 +199,26 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             pmvMatrix.glPushMatrix();
             cameraZ = -zoom;
             cameraX = strafe;
+            cameraY = upDown;
             pmvMatrix.glMultMatrixf(getUVNCamera().getFloatValues(), 0);
         } else if (lookatcamera == 4)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[4]) * saturnDistance + strafe, 2f, (float) Math.cos(orbitSpeed[4]) * saturnDistance - zoom,
+                    (float) Math.sin(orbitSpeed[4]) * saturnDistance - zoom, 1f, (float) Math.cos(orbitSpeed[4]) * saturnDistance - zoom,
                     (float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.00f, (float) Math.cos(orbitSpeed[4]) * saturnDistance,
                     0, 1, 0);
-        else if (lookatcamera == 5)
+        else if (lookatcamera == 3)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance + strafe, 2f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance - zoom,
+                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance - zoom, 1f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance - zoom,
                     (float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.00f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance,
                     0, 1, 0);
-        else if (lookatcamera == 6)
+        else if (lookatcamera == 2)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[6]) * marsDistance + strafe, 2f, (float) Math.cos(orbitSpeed[6]) * marsDistance - zoom,
+                    (float) Math.sin(orbitSpeed[6]) * marsDistance - zoom, 0.2f, (float) Math.cos(orbitSpeed[6]) * marsDistance - zoom,
                     (float) Math.sin(orbitSpeed[6]) * marsDistance, 0.00f, (float) Math.cos(orbitSpeed[6]) * marsDistance,
                     0, 1, 0);
-        else if (lookatcamera == 7)
+        else if (lookatcamera == 1)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[7]) * earthDistance + strafe, 0.5f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
+                    (float) Math.sin(orbitSpeed[7]) * earthDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
                     (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.00f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
                     0, 1, 0);
 
@@ -702,6 +703,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                 strafe += 0.1f;
                 break;
             }
+            case KeyEvent.VK_Q: {
+                upDown -= 0.1f;
+                break;
+            }
+            case KeyEvent.VK_E: {
+                upDown += 0.1f;
+                break;
+            }
             case KeyEvent.VK_RIGHT: {
                 Matrix3D r = new Matrix3D();
                 r.rotate(-1, v);
@@ -745,9 +754,27 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                 strafe = 0;
                 break;
             }
+            case KeyEvent.VK_1: {
+                lookatcamera = 1;
+                zoom = -0.5f;
+                strafe = 0;
+                break;
+            }
+            case KeyEvent.VK_2: {
+                lookatcamera = 2;
+                zoom = -.5f;
+                strafe = 0;
+                break;
+            }
+            case KeyEvent.VK_3: {
+                lookatcamera = 3;
+                zoom = -5;
+                strafe = 0;
+                break;
+            }
             case KeyEvent.VK_4: {
                 lookatcamera = 4;
-                zoom = 5f;
+                zoom = -5f;
                 strafe = 0;
                 break;
             }
