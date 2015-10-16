@@ -18,7 +18,7 @@ import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 
 
 public class Ass1 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener {
-    private Dimension dimention = new Dimension(1000, 1000);
+    private Dimension dimention = new Dimension(500, 500);
     private GLCanvas myCanvas;
     private int rendering_program;
     private int VAO[] = new int[1];

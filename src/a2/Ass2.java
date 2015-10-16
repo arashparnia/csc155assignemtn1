@@ -75,7 +75,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private GLCanvas myCanvas;
 
     private int vao[] = new int[1];
-    private int vbo[] = new int[3];
+    private int vbo[] = new int[20];
     private float cameraX, cameraY, cameraZ;
     private int rendering_program;
     private int VAO[] = new int[1];
@@ -86,15 +86,22 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     private Random rand;
 
-    private Sphere mySphere = new Sphere(50);
-
+    private Sphere mySphere = new Sphere(48);
+    private Ring myAstroid = new Ring(20,40,48);
     private TextureReader tr = new TextureReader();
     private int sunTexture;
+    private int mercuryTexture;
+    private int venusTexture;
     private int earthTexture;
     private int moonTexture;
     private int marsTexture;
     private int jupiterTexture;
     private int saturnTexture;
+    private int saturnRingTexture;
+    private int uranusTexture;
+    private int uranusRingTexture;
+    private int neptuneTexture;
+    private int plutoTexture;
     private int[] samplers = new int[2];
     private Vector3D u = new Vector3D(1, 0, 0, 0);
     private Vector3D v = new Vector3D(0, 1, 0, 0);
@@ -130,13 +137,18 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glGenSamplers(1, samplers, 0);
         gl.glBindSampler(0, tx_loc);
         sunTexture = tr.loadTexture(drawable, "textures/sunmap.jpg");
+        mercuryTexture = tr.loadTexture(drawable, "textures/mercurymap.jpg");
+        venusTexture=  tr.loadTexture(drawable, "textures/venusmap.jpg");
         earthTexture = tr.loadTexture(drawable, "textures/earthmap1k.jpg");
         moonTexture = tr.loadTexture(drawable, "textures/moonmap1k.jpg");
         marsTexture = tr.loadTexture(drawable, "textures/marsmap1k.jpg");
         jupiterTexture = tr.loadTexture(drawable, "textures/jupitermap.jpg");
         saturnTexture = tr.loadTexture(drawable, "textures/saturnmap.jpg");
-
-
+        saturnRingTexture = tr.loadTexture(drawable, "textures/saturnringcolor.jpg");
+        uranusTexture=  tr.loadTexture(drawable, "textures/uranusmap.jpg");
+        uranusRingTexture =  tr.loadTexture(drawable, "textures/uranusringcolour.jpg");
+        neptuneTexture = tr.loadTexture(drawable, "textures/neptunemap.jpg");
+        plutoTexture = tr.loadTexture(drawable, "textures/plutomap1k.jpg");
         animator = new Animator(myCanvas);
         Thread thread =
                 new Thread(new Runnable() {
@@ -201,25 +213,51 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             cameraX = strafe;
             cameraY = upDown;
             pmvMatrix.glMultMatrixf(getUVNCamera().getFloatValues(), 0);
-        } else if (lookatcamera == 4)
+        }
+        else if (lookatcamera == 1)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[4]) * saturnDistance - zoom, 1f, (float) Math.cos(orbitSpeed[4]) * saturnDistance - zoom,
-                    (float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.00f, (float) Math.cos(orbitSpeed[4]) * saturnDistance,
+                    (float) Math.sin(orbitSpeed[9]) * mercuryDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance - zoom,
+                    (float) Math.sin(orbitSpeed[9]) * mercuryDistance, 0.00f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance,
+                    0, 1, 0);
+        else if (lookatcamera == 2)
+            pmvMatrix.gluLookAt(
+                    (float) Math.sin(orbitSpeed[8]) * venusDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[8]) * venusDistance - zoom,
+                    (float) Math.sin(orbitSpeed[8]) * venusDistance, 0.00f, (float) Math.cos(orbitSpeed[8]) * venusDistance,
                     0, 1, 0);
         else if (lookatcamera == 3)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance - zoom, 1f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance - zoom,
-                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.00f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance,
+                    (float) Math.sin(orbitSpeed[7]) * earthDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
+                    (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.00f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
                     0, 1, 0);
-        else if (lookatcamera == 2)
+        else if (lookatcamera == 4)
             pmvMatrix.gluLookAt(
                     (float) Math.sin(orbitSpeed[6]) * marsDistance - zoom, 0.2f, (float) Math.cos(orbitSpeed[6]) * marsDistance - zoom,
                     (float) Math.sin(orbitSpeed[6]) * marsDistance, 0.00f, (float) Math.cos(orbitSpeed[6]) * marsDistance,
                     0, 1, 0);
-        else if (lookatcamera == 1)
+        else if (lookatcamera == 5)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[7]) * earthDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
-                    (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.00f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
+                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance - zoom, 1f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance - zoom,
+                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.00f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance,
+                    0, 1, 0);
+        else if (lookatcamera == 6)
+            pmvMatrix.gluLookAt(
+                    (float) Math.sin(orbitSpeed[4]) * saturnDistance - zoom, 1f, (float) Math.cos(orbitSpeed[4]) * saturnDistance - zoom,
+                    (float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.00f, (float) Math.cos(orbitSpeed[4]) * saturnDistance,
+                    0, 1, 0);
+        else if (lookatcamera == 7)
+                pmvMatrix.gluLookAt(
+                        (float) Math.sin(orbitSpeed[3]) * uranusDistance - zoom, 1f, (float) Math.cos(orbitSpeed[3]) * uranusDistance - zoom,
+                        (float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.00f, (float) Math.cos(orbitSpeed[3]) * uranusDistance,
+                        0, 1, 0);
+        else if (lookatcamera == 8)
+            pmvMatrix.gluLookAt(
+                    (float) Math.sin(orbitSpeed[2]) * neptuneDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance - zoom,
+                    (float) Math.sin(orbitSpeed[2]) * neptuneDistance, 0.00f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance,
+                    0, 1, 0);
+        else if (lookatcamera == 9)
+            pmvMatrix.gluLookAt(
+                    (float) Math.sin(orbitSpeed[1]) * plutoDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[1]) * plutoDistance - zoom,
+                    (float) Math.sin(orbitSpeed[1]) * plutoDistance, 0.00f, (float) Math.cos(orbitSpeed[1]) * plutoDistance,
                     0, 1, 0);
 
 
@@ -307,6 +345,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, mercuryTexture);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -324,6 +370,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, venusTexture);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -433,6 +487,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+
         pmvMatrix.glPopMatrix();
         pmvMatrix.glPopMatrix();// poping jupiter
         //-----------------------   == saturn
@@ -440,7 +495,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         pmvMatrix.glTranslatef((float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.0f, (float) Math.cos(orbitSpeed[4]) * saturnDistance);
         pmvMatrix.glScalef(saturnSize, saturnSize, saturnSize);
         pmvMatrix.glPushMatrix();
-        pmvMatrix.glRotatef((float) ((float) (System.currentTimeMillis() % 3600) / 20.0), 0.0f, 1.0f, 0.0f);
+        pmvMatrix.glRotatef(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
         gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
@@ -459,6 +514,32 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glVertexAttrib4fv(1, noise);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        //-----------------------   == saturn ring
+
+                pmvMatrix.glPushMatrix();
+
+//                pmvMatrix.glTranslatef(
+//                        (float) Math.sin(3),
+//                        0f,
+//                        (float) Math.cos(3));
+                pmvMatrix.glScalef(saturnSize /10 , saturnSize /10, saturnSize /10);
+                gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
+                gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+
+                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
+                gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+                gl.glEnableVertexAttribArray(0);
+                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
+                gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+                gl.glEnableVertexAttribArray(1);
+                gl.glActiveTexture(GL_TEXTURE0);
+                gl.glBindTexture(GL_TEXTURE_2D, saturnRingTexture);
+                gl.glEnable(GL_CULL_FACE);
+                gl.glFrontFace(GL_CW);
+                gl.glEnable(GL_DEPTH_TEST);
+                gl.glDrawArrays(GL_TRIANGLES, 0, myAstroid.getIndices().length);
+                pmvMatrix.glPopMatrix();
+
         pmvMatrix.glPopMatrix();
         pmvMatrix.glPopMatrix();// poping saturn
         //-----------------------   == uranus
@@ -473,6 +554,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, uranusTexture);
 
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
@@ -494,6 +583,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, neptuneTexture);
+
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -512,6 +609,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, plutoTexture);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -526,6 +631,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     private void setupVertices(GL4 gl) {
+        gl.glGenVertexArrays(vao.length, vao, 0);
+        gl.glBindVertexArray(vao[0]);
+        gl.glGenBuffers(vbo.length, vbo, 0);
+        {
         Vertex3D[] vertices = mySphere.getVertices();
         int[] indices = mySphere.getIndices();
 
@@ -544,9 +653,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
         }
 
-        gl.glGenVertexArrays(vao.length, vao, 0);
-        gl.glBindVertexArray(vao[0]);
-        gl.glGenBuffers(vbo.length, vbo, 0);
+
 
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
@@ -559,6 +666,35 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
         FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+    }
+        {
+            Vertex3D[] vertices = myAstroid.getVertices();
+            int[] indices = myAstroid.getIndices();
+
+            float[] fvalues = new float[indices.length * 3];
+            float[] tvalues = new float[indices.length * 2];
+
+
+            for (int i = 0; i < indices.length; i++) {
+                fvalues[i * 3] = (float) (vertices[indices[i]]).getX()  ;
+                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY() ;
+                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+
+            }
+
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
+            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
+            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+
+
+        }
 
     }
 
@@ -792,6 +928,18 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             }
             case KeyEvent.VK_7: {
                 lookatcamera = 7;
+                zoom = -0.5f;
+                strafe = 0;
+                break;
+            }
+            case KeyEvent.VK_8: {
+                lookatcamera = 8;
+                zoom = -0.5f;
+                strafe = 0;
+                break;
+            }
+            case KeyEvent.VK_9: {
+                lookatcamera = 9;
                 zoom = -0.5f;
                 strafe = 0;
                 break;
