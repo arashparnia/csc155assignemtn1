@@ -20,6 +20,4 @@ void main(void){
 	gl_Position = proj_matrix * mv_matrix * vec4(position,1.0) ;//+ vec4(rand() * mod(20 ,rand())* 10 ,rand() * mod(gl_InstanceID, 13) * 10 ,1,1.0) ;
 	vColor = vec4(position,1.0)*2.0 + vec4(0.5, 0.5, 0.5, 0.0);
 	tc = texPos;
-} 
-
-
+}

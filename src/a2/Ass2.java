@@ -77,11 +77,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private int vao[] = new int[1];
     private int vbo[] = new int[20];
     private float cameraX, cameraY, cameraZ;
-    private float x[]  = new float[5];
-    private float y[]  = new float[5];
-    private float z[]  = new float[5];
-    private float r[]  = new float[5];
-    private float s[]  = new float[5];
+    private float x[] = new float[5];
+    private float y[] = new float[5];
+    private float z[] = new float[5];
+    private float r[] = new float[5];
+    private float s[] = new float[5];
     private float scalefactor = 0;
 
     private int rendering_program;
@@ -94,7 +94,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private Random rand;
 
     private Sphere mySphere = new Sphere(48);
-    private Ring ring = new Ring(20,40,48);
+    private Ring ring = new Ring(20, 40, 48);
     private TextureReader tr = new TextureReader();
     private int sunTexture;
     private int solarflareTexture;
@@ -115,6 +115,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private Vector3D v = new Vector3D(0, 1, 0, 0);
     private Vector3D n = new Vector3D(0, 0, 1, 0);
     private int lookatcamera = 0;
+
     public Ass2() {
         setTitle("Assignment 2 CSC155");
         setSize(dimention);
@@ -125,6 +126,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         rand = new Random();
         add(myCanvas);
         this.addKeyListener(this);
+        keyMaping();
         setVisible(true);
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -140,23 +142,23 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         GL4 gl = (GL4) drawable.getGL();
         rendering_program = createShaderPrograms(drawable);
         setupVertices(gl);
-        upDown=10;
-        zoom=-100;
+        upDown = 10;
+        zoom = -100;
         // could be handleed directly with layout in frag shader
         int tx_loc = gl.glGetUniformLocation(rendering_program, "s");
         gl.glGenSamplers(1, samplers, 0);
         gl.glBindSampler(0, tx_loc);
         sunTexture = tr.loadTexture(drawable, "textures/sunmap.jpg");
         mercuryTexture = tr.loadTexture(drawable, "textures/mercurymap.jpg");
-        venusTexture=  tr.loadTexture(drawable, "textures/venusmap.jpg");
+        venusTexture = tr.loadTexture(drawable, "textures/venusmap.jpg");
         earthTexture = tr.loadTexture(drawable, "textures/earthmap1k.jpg");
         moonTexture = tr.loadTexture(drawable, "textures/moonmap1k.jpg");
         marsTexture = tr.loadTexture(drawable, "textures/marsmap1k.jpg");
         jupiterTexture = tr.loadTexture(drawable, "textures/jupitermap.jpg");
         saturnTexture = tr.loadTexture(drawable, "textures/saturnmap.jpg");
         saturnRingTexture = tr.loadTexture(drawable, "textures/saturnringcolor.jpg");
-        uranusTexture=  tr.loadTexture(drawable, "textures/uranusmap.jpg");
-        uranusRingTexture =  tr.loadTexture(drawable, "textures/uranusringcolour.jpg");
+        uranusTexture = tr.loadTexture(drawable, "textures/uranusmap.jpg");
+        uranusRingTexture = tr.loadTexture(drawable, "textures/uranusringcolour.jpg");
         neptuneTexture = tr.loadTexture(drawable, "textures/neptunemap.jpg");
         plutoTexture = tr.loadTexture(drawable, "textures/plutomap1k.jpg");
         solarflareTexture = tr.loadTexture(drawable, "textures/solarflare.png");
@@ -172,19 +174,20 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     private Matrix3D getUVNCamera() {
         Matrix3D uvnMatrix = new Matrix3D();
-        uvnMatrix.setRow(0, u);
-        uvnMatrix.setRow(1, v);
-        uvnMatrix.setRow(2, n);
+        uvnMatrix.setRow(0, u.normalize());
+        uvnMatrix.setRow(1, v.normalize());
+        uvnMatrix.setRow(2, n.normalize());
         uvnMatrix.setRow(3, new Vector3D(0, 0, 0, 1));
         Matrix3D t = new Matrix3D();
-        t.setRow(0, new Vector3D(1, 0, 0, -cameraX));
-        t.setRow(1, new Vector3D(0, 1, 0, -cameraY));
-        t.setRow(2, new Vector3D(0, 0, 1, -cameraZ));
+        t.setRow(0, new Vector3D(1, 0, 0, -strafe));
+        t.setRow(1, new Vector3D(0, 1, 0, -upDown));
+        t.setRow(2, new Vector3D(0, 0, 1, zoom));
         t.setRow(3, new Vector3D(0, 0, 0, 1));
         uvnMatrix.concatenate(t);
         return uvnMatrix;
     }
-    private  void setupGl(GL4 gl){
+
+    private void setupGl(GL4 gl) {
 
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -198,6 +201,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
     }
+
     public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
 
@@ -225,12 +229,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         if (lookatcamera == 0) {
             pmvMatrix.glPushMatrix();
-            cameraZ = -zoom;
-            cameraX = strafe;
-            cameraY = upDown;
             pmvMatrix.glMultMatrixf(getUVNCamera().getFloatValues(), 0);
-        }
-        else if (lookatcamera == 1)
+        } else if (lookatcamera == 1)
             pmvMatrix.gluLookAt(
                     (float) Math.sin(orbitSpeed[9]) * mercuryDistance - zoom, 0.0f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance - zoom,
                     (float) Math.sin(orbitSpeed[9]) * mercuryDistance, 0.00f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance,
@@ -261,10 +261,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                     (float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.00f, (float) Math.cos(orbitSpeed[4]) * saturnDistance,
                     0, 1, 0);
         else if (lookatcamera == 7)
-                pmvMatrix.gluLookAt(
-                        (float) Math.sin(orbitSpeed[3]) * uranusDistance - zoom, 1f, (float) Math.cos(orbitSpeed[3]) * uranusDistance - zoom,
-                        (float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.00f, (float) Math.cos(orbitSpeed[3]) * uranusDistance,
-                        0, 1, 0);
+            pmvMatrix.gluLookAt(
+                    (float) Math.sin(orbitSpeed[3]) * uranusDistance - zoom, 1f, (float) Math.cos(orbitSpeed[3]) * uranusDistance - zoom,
+                    (float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.00f, (float) Math.cos(orbitSpeed[3]) * uranusDistance,
+                    0, 1, 0);
         else if (lookatcamera == 8)
             pmvMatrix.gluLookAt(
                     (float) Math.sin(orbitSpeed[2]) * neptuneDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance - zoom,
@@ -275,9 +275,6 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                     (float) Math.sin(orbitSpeed[1]) * plutoDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[1]) * plutoDistance - zoom,
                     (float) Math.sin(orbitSpeed[1]) * plutoDistance, 0.00f, (float) Math.cos(orbitSpeed[1]) * plutoDistance,
                     0, 1, 0);
-
-
-
 
 
         if (axis) {
@@ -323,9 +320,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         //--------------------------------- solar flare \
 
-        if (System.currentTimeMillis() % 100 ==0 ){
+        if (System.currentTimeMillis() % 100 == 0) {
             scalefactor = 0;
-            for (int i = 0 ; i<5;i++) {
+            for (int i = 0; i < 5; i++) {
                 x[i] = (rand.nextFloat());
                 y[i] = (rand.nextFloat());
                 z[i] = (rand.nextFloat());
@@ -336,19 +333,19 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                 if (rand.nextBoolean()) x[i] = -x[i];
                 if (rand.nextBoolean()) y[i] = -y[i];
                 if (rand.nextBoolean()) z[i] = -z[i];
-                s[i] = 0.01f + (rand.nextFloat()/10);
+                s[i] = 0.01f + (rand.nextFloat() / 10);
 
             }
         }
         scalefactor += 0.05;
 
-        for (int i = 0 ; i<5;i++) {
+        for (int i = 0; i < 5; i++) {
 
             pmvMatrix.glPushMatrix();
-            pmvMatrix.glTranslatef(x[i] ,y[i],z[i]);
+            pmvMatrix.glTranslatef(x[i], y[i], z[i]);
             //pmvMatrix.glRotatef(20,1,1,1);
-            float ss =  s[i] + (float)Math.sin(scalefactor)/10;
-            pmvMatrix.glScalef(ss,ss,ss);
+            float ss = s[i] + (float) Math.sin(scalefactor) / 10;
+            pmvMatrix.glScalef(ss, ss, ss);
             gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
             gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
             setupGl(gl);
@@ -458,29 +455,29 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         //-----------------------   == saturn ring
 
-                pmvMatrix.glPushMatrix();
-                pmvMatrix.glScalef(saturnSize /10 , saturnSize /10, saturnSize /10);
-                gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
-                gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
-                gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
-                gl.glEnableVertexAttribArray(0);
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
-                gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
-                gl.glEnableVertexAttribArray(1);
-                gl.glActiveTexture(GL_TEXTURE0);
-                gl.glBindTexture(GL_TEXTURE_2D, saturnRingTexture);
-                gl.glEnable(GL_CULL_FACE);
-                gl.glFrontFace(GL_CW);
-                gl.glEnable(GL_DEPTH_TEST);
-                gl.glEnable(GL_BLEND);
-                //gl.glBlendEquation(GL_FUNC_ADD);
-                //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
-                // gl.glBlendFunc(GL_ONE, GL_ONE);
-                gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
-                gl.glDisable(GL_BLEND);
-                pmvMatrix.glPopMatrix();
+        pmvMatrix.glPushMatrix();
+        pmvMatrix.glScalef(saturnSize / 10, saturnSize / 10, saturnSize / 10);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, saturnRingTexture);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glEnable(GL_BLEND);
+        //gl.glBlendEquation(GL_FUNC_ADD);
+        //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
+        // gl.glBlendFunc(GL_ONE, GL_ONE);
+        gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
+        gl.glDisable(GL_BLEND);
+        pmvMatrix.glPopMatrix();
 
         pmvMatrix.glPopMatrix();
         pmvMatrix.glPopMatrix();// poping saturn
@@ -518,7 +515,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         pmvMatrix.glRotatef(-degreePerSec(0.005f), 0, 1, 0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-       setupGl(gl);
+        setupGl(gl);
         gl.glBindTexture(GL_TEXTURE_2D, plutoTexture);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         pmvMatrix.glPopMatrix();
@@ -534,38 +531,37 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindVertexArray(vao[0]);
         gl.glGenBuffers(vbo.length, vbo, 0);
         {
-        Vertex3D[] vertices = mySphere.getVertices();
-        int[] indices = mySphere.getIndices();
+            Vertex3D[] vertices = mySphere.getVertices();
+            int[] indices = mySphere.getIndices();
 
-        float[] fvalues = new float[indices.length * 3];
-        float[] tvalues = new float[indices.length * 2];
-        float[] nvalues = new float[indices.length * 3];
+            float[] fvalues = new float[indices.length * 3];
+            float[] tvalues = new float[indices.length * 2];
+            float[] nvalues = new float[indices.length * 3];
 
-        for (int i = 0; i < indices.length; i++) {
-            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-            nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
-            nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
-            nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+            for (int i = 0; i < indices.length; i++) {
+                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+                nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
+                nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
+                nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+            }
+
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
+            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
         }
-
-
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
-        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
-        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-    }
         {
             Vertex3D[] vertices = ring.getVertices();
             int[] indices = ring.getIndices();
@@ -575,8 +571,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
             for (int i = 0; i < indices.length; i++) {
-                fvalues[i * 3] = (float) (vertices[indices[i]]).getX()  ;
-                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY() ;
+                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
                 fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
                 tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
                 tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
@@ -681,6 +677,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private float degreePerSec(float rev) {
         return (float) (System.currentTimeMillis() % 360000) / (1 / rev);
     }
+
     public void dispose(GLAutoDrawable drawable) {
     }
 
@@ -722,63 +719,6 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     @Override
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
-            case KeyEvent.VK_W: {
-                zoom += 0.1f;
-                break;
-            }
-            case KeyEvent.VK_S: {
-                zoom -= 0.1f;
-                break;
-            }
-            case KeyEvent.VK_A: {
-                strafe -= 0.1f;
-                break;
-            }
-            case KeyEvent.VK_D: {
-                strafe += 0.1f;
-                break;
-            }
-            case KeyEvent.VK_Q: {
-                upDown -= 0.1f;
-                break;
-            }
-            case KeyEvent.VK_E: {
-                upDown += 0.1f;
-                break;
-            }
-            case KeyEvent.VK_RIGHT: {
-                Matrix3D r = new Matrix3D();
-                r.rotate(-1, v);
-                n = n.mult(r);
-                u = u.mult(r);
-                pan += 0.1f;
-                break;
-            }
-            case KeyEvent.VK_LEFT: {
-                Matrix3D r = new Matrix3D();
-                r.rotate(+1, v);
-                n = n.mult(r);
-                u = u.mult(r);
-                pan -= 0.1f;
-                break;
-            }
-            case KeyEvent.VK_UP: {
-                Matrix3D r = new Matrix3D();
-                r.rotate(1, u);
-                n = n.mult(r);
-                v = v.mult(r);
-
-                pitch += 0.1f;
-                break;
-            }
-            case KeyEvent.VK_DOWN: {
-                Matrix3D r = new Matrix3D();
-                r.rotate(-1, u);
-                n = n.mult(r);
-                v = v.mult(r);
-                pitch -= 0.1f;
-                break;
-            }
             case KeyEvent.VK_SPACE: {
                 axis = !axis;
                 break;
@@ -822,9 +762,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             }
             case KeyEvent.VK_6: {
                 lookatcamera = 6;
-                upDown=10;
                 zoom = 5f;
                 strafe = 0;
+                upDown = 10;
                 break;
             }
             case KeyEvent.VK_7: {
@@ -852,131 +792,162 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     public void keyReleased(KeyEvent e) {
 
     }
-//
-//    private class ZoomIn extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.zoom += 5.0f;
-//            //System.out.println("zoom + 1.0");
-//        }
-//    }
-//
-//    private class ZoomOut extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.zoom -= 5.0f;
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//
-//    private class StrafeRight extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.strafe += 5.0f;
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//
-//    private class StrafeLeft extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.strafe -= 5.0f;
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//
-//    private class PanLeft extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.pan -= 1.0f;
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//
-//    private class PanRight extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.pan += 5.0f;
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//
-//    private class PitchUP extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.pitch += 1.0f;
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//
-//    private class PitchDown extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            Ass2.pitch -= 5.0f;
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//
-//    private class SetAxis extends AbstractAction {
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//            if (Ass2.axis == true) {
-//                Ass2.axis = false;
-//            } else if (Ass2.axis == false) {
-//                Ass2.axis = true;
-//            }
-//            //System.out.println("zoom - 1.0");
-//        }
-//    }
-//    private void keyMaping(){
-//        int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
-//        InputMap imap = this.getRootPane().getInputMap(mapName);
-//        ActionMap amap = this.getRootPane().getActionMap();
-//
-//        KeyStroke spaceKey = KeyStroke.getKeyStroke("SPACE");
-//        imap.put(spaceKey, "space");
-//        SetAxis setaxis = new SetAxis();
-//        amap.put("space", setaxis);
-//
-//        KeyStroke wKey = KeyStroke.getKeyStroke('w');
-//        imap.put(wKey, "zoomin");
-//        ZoomIn zoomin = new ZoomIn();
-//        amap.put("zoomin", zoomin);
-//
-//        KeyStroke sKey = KeyStroke.getKeyStroke('s');
-//        imap.put(sKey, "zoomout");
-//        ZoomOut zoomout = new ZoomOut();
-//        amap.put("zoomout", zoomout);
-//
-//        KeyStroke dKey = KeyStroke.getKeyStroke('d');
-//        imap.put(dKey, "straferight");
-//        StrafeRight straferight = new StrafeRight();
-//        amap.put("straferight", straferight);
-//
-//        KeyStroke aKey = KeyStroke.getKeyStroke('a');
-//        imap.put(aKey, "strafeleft");
-//        StrafeLeft strafeleft = new StrafeLeft();
-//        amap.put("strafeleft", strafeleft);
-//
-//        KeyStroke upKey = KeyStroke.getKeyStroke("UP");
-//        imap.put(upKey, "pitchup");
-//        PitchUP pitchup = new PitchUP();
-//        amap.put("pitchup", pitchup);
-//
-//        KeyStroke downKey = KeyStroke.getKeyStroke("DOWN");
-//        imap.put(downKey, "pitchdown");
-//        PitchDown pitchdown = new PitchDown();
-//        amap.put("pitchdown", pitchdown);
-//
-//        KeyStroke rightKey = KeyStroke.getKeyStroke("RIGHT");
-//        imap.put(rightKey, "panright");
-//        PanRight panright = new PanRight();
-//        amap.put("panright", panright);
-//
-//        KeyStroke leftKey = KeyStroke.getKeyStroke("LEFT");
-//        imap.put(leftKey, "panleft");
-//        PanLeft panleft = new PanLeft();
-//        amap.put("panleft", panleft);
-//
-//    }
+
+    private void keyMaping() {
+        int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
+        InputMap imap = this.getRootPane().getInputMap(mapName);
+        ActionMap amap = this.getRootPane().getActionMap();
+
+
+
+        KeyStroke wKey = KeyStroke.getKeyStroke('w');
+        imap.put(wKey, "zoomin");
+        ZoomIn zoomin = new ZoomIn();
+        amap.put("zoomin", zoomin);
+
+        KeyStroke sKey = KeyStroke.getKeyStroke('s');
+        imap.put(sKey, "zoomout");
+        ZoomOut zoomout = new ZoomOut();
+        amap.put("zoomout", zoomout);
+
+        KeyStroke dKey = KeyStroke.getKeyStroke('d');
+        imap.put(dKey, "straferight");
+        StrafeRight straferight = new StrafeRight();
+        amap.put("straferight", straferight);
+
+        KeyStroke aKey = KeyStroke.getKeyStroke('a');
+        imap.put(aKey, "strafeleft");
+        StrafeLeft strafeleft = new StrafeLeft();
+        amap.put("strafeleft", strafeleft);
+
+        KeyStroke eKey = KeyStroke.getKeyStroke('e');
+        imap.put(eKey, "upkey");
+        up up = new up();
+        amap.put("upkey", up);
+
+        KeyStroke qKey = KeyStroke.getKeyStroke('q');
+        imap.put(qKey, "downkey");
+        down down = new down();
+        amap.put("downkey", down);
+
+        KeyStroke upKey = KeyStroke.getKeyStroke("UP");
+        imap.put(upKey, "pitchup");
+        pitchUp pitchup = new pitchUp();
+        amap.put("pitchup", pitchup);
+
+        KeyStroke downKey = KeyStroke.getKeyStroke("DOWN");
+        imap.put(downKey, "pitchdown");
+        pitchDown pitchdown = new pitchDown();
+        amap.put("pitchdown", pitchdown);
+
+        KeyStroke rightKey = KeyStroke.getKeyStroke("RIGHT");
+        imap.put(rightKey, "panright");
+        panRight panright = new panRight();
+        amap.put("panright", panright);
+
+        KeyStroke leftKey = KeyStroke.getKeyStroke("LEFT");
+        imap.put(leftKey, "panleft");
+        panLeft panleft = new panLeft();
+        amap.put("panleft", panleft);
+
+    }
+
+
+
+    private class ZoomIn extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.zoom += 5f;
+            //System.out.println("zoom + 1.0");
+        }
+    }
+
+
+    private class ZoomOut extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.zoom -= 5f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class StrafeRight extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.strafe += 5f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+
+    private class StrafeLeft extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Ass2.strafe -= 5f;
+            //System.out.println("zoom - 1.0");
+        }
+    }
+    private class down extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            upDown -= 5f;
+        }
+    }
+
+    private class up extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+            upDown += 5f;
+
+        }
+    }
+
+    private class panRight extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Matrix3D r = new Matrix3D();
+            r.rotate(-10, v.normalize());
+            n = n.mult(r);
+            u = u.mult(r);
+
+        }
+    }
+    private class panLeft extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Matrix3D r = new Matrix3D();
+            r.rotate(+10, v.normalize());
+            n = n.mult(r);
+            u = u.mult(r);
+
+        }
+    }
+
+    private class pitchUp extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Matrix3D r = new Matrix3D();
+            r.rotate(10, u.normalize());
+            n = n.mult(r);
+            v = v.mult(r);
+        }
+    }
+
+    private class pitchDown extends AbstractAction {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Matrix3D r = new Matrix3D();
+            r.rotate(-10, u.normalize());
+            n = n.mult(r);
+            v = v.mult(r);
+        }
+    }
+
+
+
 }
+
+
+
+
+
