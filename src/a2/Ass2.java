@@ -106,17 +106,20 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private int jupiterTexture;
     private int saturnTexture;
     private int saturnRingTexture;
+    private int saturnRingPattern;
     private int uranusTexture;
     private int uranusRingTexture;
     private int neptuneTexture;
     private int plutoTexture;
     private int[] samplers = new int[2];
-    private Vector3D u = new Vector3D(1, 0, 0, 0);
-    private Vector3D v = new Vector3D(0, 1, 0, 0);
-    private Vector3D n = new Vector3D(0, 0, 1, 0);
+    private Vector3D u = new Vector3D(1, 0, 0);
+    private Vector3D v = new Vector3D(0, 1, 0);
+    private Vector3D n = new Vector3D(0, 0, 1 );
+    private Vector3D xyz = new Vector3D(0,0,0);
     private int lookatcamera = 0;
 
-    public Ass2() {
+    public Ass2()
+    {
         setTitle("Assignment 2 CSC155");
         setSize(dimention);
         this.addMouseWheelListener(this);
@@ -137,7 +140,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     }
 
 
-    public void init(GLAutoDrawable drawable) {
+    public void init(GLAutoDrawable drawable)
+    {
         //this.getRootPane().requestFocus();
         GL4 gl = (GL4) drawable.getGL();
         rendering_program = createShaderPrograms(drawable);
@@ -157,6 +161,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         jupiterTexture = tr.loadTexture(drawable, "textures/jupitermap.jpg");
         saturnTexture = tr.loadTexture(drawable, "textures/saturnmap.jpg");
         saturnRingTexture = tr.loadTexture(drawable, "textures/saturnringcolor.jpg");
+        saturnRingPattern = tr.loadTexture(drawable, "textures/saturnringpattern.jpg");
         uranusTexture = tr.loadTexture(drawable, "textures/uranusmap.jpg");
         uranusRingTexture = tr.loadTexture(drawable, "textures/uranusringcolour.jpg");
         neptuneTexture = tr.loadTexture(drawable, "textures/neptunemap.jpg");
@@ -164,30 +169,28 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         solarflareTexture = tr.loadTexture(drawable, "textures/solarflare.png");
         animator = new Animator(myCanvas);
         Thread thread =
-                new Thread(new Runnable() {
-                    public void run() {
-                        animator.start();
-                    }
-                });
+                new Thread(new Runnable(){ public void run() { animator.start();}});
         thread.start();
     }
 
-    private Matrix3D getUVNCamera() {
+    private Matrix3D getUVNCamera()
+    {
         Matrix3D uvnMatrix = new Matrix3D();
-        uvnMatrix.setRow(0, u.normalize());
-        uvnMatrix.setRow(1, v.normalize());
-        uvnMatrix.setRow(2, n.normalize());
+        uvnMatrix.setRow(0, u);
+        uvnMatrix.setRow(1, v);
+        uvnMatrix.setRow(2, n);
         uvnMatrix.setRow(3, new Vector3D(0, 0, 0, 1));
         Matrix3D t = new Matrix3D();
-        t.setRow(0, new Vector3D(1, 0, 0, -strafe));
-        t.setRow(1, new Vector3D(0, 1, 0, -upDown));
-        t.setRow(2, new Vector3D(0, 0, 1, zoom));
+        t.setRow(0, new Vector3D(1, 0, 0, -xyz.getX()));
+        t.setRow(1, new Vector3D(0, 1, 0, -xyz.getY()));
+        t.setRow(2, new Vector3D(0, 0, 1, -xyz.getZ()));
         t.setRow(3, new Vector3D(0, 0, 0, 1));
         uvnMatrix.concatenate(t);
         return uvnMatrix;
     }
 
-    private void setupGl(GL4 gl) {
+    private void setupGl(GL4 gl)
+    {
 
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
@@ -202,7 +205,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
     }
 
-    public void display(GLAutoDrawable drawable) {
+    public void display(GLAutoDrawable drawable)
+    {
         GL4 gl = (GL4) drawable.getGL();
 
         gl.glClear(GL_DEPTH_BUFFER_BIT);
@@ -215,7 +219,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         int proj_loc = gl.glGetUniformLocation(rendering_program, "proj_matrix");
 
         double orbitSpeed[] = new double[15];
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < 15; i++)
+        {
             orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * i);
         }
         float aspect = myCanvas.getWidth() / myCanvas.getHeight();
@@ -227,7 +232,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         // --------------------------- CAMERA
 
-        if (lookatcamera == 0) {
+        if (lookatcamera == 0)
+        {
             pmvMatrix.glPushMatrix();
             pmvMatrix.glMultMatrixf(getUVNCamera().getFloatValues(), 0);
         } else if (lookatcamera == 1)
@@ -277,7 +283,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                     0, 1, 0);
 
 
-        if (axis) {
+        if (axis)
+        {
             // ----------------------   == X-AXIS
             pmvMatrix.glPushMatrix();
             pmvMatrix.glTranslatef(0, 0, 0);
@@ -320,7 +327,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         //--------------------------------- solar flare \
 
-        if (System.currentTimeMillis() % 100 == 0) {
+        if (System.currentTimeMillis() % 100 == 0)
+        {
             scalefactor = 0;
             for (int i = 0; i < 5; i++) {
                 x[i] = (rand.nextFloat());
@@ -339,7 +347,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
         scalefactor += 0.05;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++)
+        {
 
             pmvMatrix.glPushMatrix();
             pmvMatrix.glTranslatef(x[i], y[i], z[i]);
@@ -466,14 +475,14 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, saturnRingTexture);
+        gl.glBindTexture(GL_TEXTURE_2D, saturnRingPattern);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
         gl.glEnable(GL_BLEND);
         //gl.glBlendEquation(GL_FUNC_ADD);
         //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
+        gl.glBlendFunc(GL_ONE, GL_ONE);
         // gl.glBlendFunc(GL_ONE, GL_ONE);
         gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
         gl.glDisable(GL_BLEND);
@@ -526,7 +535,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     }
 
 
-    private void setupVertices(GL4 gl) {
+    private void setupVertices(GL4 gl)
+    {
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
         gl.glGenBuffers(vbo.length, vbo, 0);
@@ -538,7 +548,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             float[] tvalues = new float[indices.length * 2];
             float[] nvalues = new float[indices.length * 3];
 
-            for (int i = 0; i < indices.length; i++) {
+            for (int i = 0; i < indices.length; i++)
+            {
                 fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
                 fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
                 fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
@@ -570,7 +581,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             float[] tvalues = new float[indices.length * 2];
 
 
-            for (int i = 0; i < indices.length; i++) {
+            for (int i = 0; i < indices.length; i++)
+            {
                 fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
                 fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
                 fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
@@ -594,7 +606,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     }
 
 
-    private Matrix3D perspective(float fovy, float aspect, float n, float f) {
+    private Matrix3D perspective(float fovy, float aspect, float n, float f)
+    {
         float q = 1.0f / (float) Math.tan((float) Math.toRadians(0.5f * fovy));
         float A = q / aspect;
         float B = (n + f) / (n - f);
@@ -610,7 +623,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         return rt;
     }
 
-    private int createShaderPrograms(GLAutoDrawable drawable) {
+    private int createShaderPrograms(GLAutoDrawable drawable)
+    {
         int[] vertCompiled = new int[1];
         int[] fragCompiled = new int[1];
         int[] linked = new int[1];
@@ -671,7 +685,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         return vfprogram;
     }
 
-    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height)
+    {
     }
 
     private float degreePerSec(float rev) {
@@ -681,7 +696,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     public void dispose(GLAutoDrawable drawable) {
     }
 
-    public void actionPerformed(ActionEvent e) {
+    public void actionPerformed(ActionEvent e)
+    {
 //        if ("up".equals(e.getActionCommand()) && upDown < 1) {
 //            upDown += 0.1;
 //        } else if ("down".equals(e.getActionCommand()) && upDown > -1) {
@@ -700,86 +716,108 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     }
 
     @Override
-    public void mouseWheelMoved(MouseWheelEvent e) {
+    public void mouseWheelMoved(MouseWheelEvent e)
+    {
         if (e.getUnitsToScroll() < 0) {
-            System.out.println("wheels up size is" + zoom);
+            Vector3D t = new Vector3D();
+            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
+            t.scale(0.5f);
+            xyz = xyz.add(t);
             zoom += 1f;
         } else {
             System.out.println("wheels down size is " + zoom);
+            Vector3D t = new Vector3D();
+            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
+            t.scale(-0.5f);
+            xyz = xyz.add(t);
             zoom -= 1f;
         }
     }
 
 
     @Override
-    public void keyTyped(KeyEvent e) {
+    public void keyTyped(KeyEvent e)
+    {
 
     }
 
     @Override
-    public void keyPressed(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_SPACE: {
+    public void keyPressed(KeyEvent e)
+    {
+        switch (e.getKeyCode())
+        {
+            case KeyEvent.VK_SPACE:
+            {
                 axis = !axis;
                 break;
             }
-            case KeyEvent.VK_0: {
+            case KeyEvent.VK_0:
+            {
                 lookatcamera = 0;
                 zoom = -10;
                 strafe = 0;
                 upDown = 5;
                 break;
             }
-            case KeyEvent.VK_1: {
+            case KeyEvent.VK_1:
+            {
                 lookatcamera = 1;
                 zoom = 5f;
                 strafe = 0;
                 break;
             }
-            case KeyEvent.VK_2: {
+            case KeyEvent.VK_2:
+            {
                 lookatcamera = 2;
                 zoom = .5f;
                 strafe = 0;
                 break;
             }
-            case KeyEvent.VK_3: {
+            case KeyEvent.VK_3:
+            {
                 lookatcamera = 3;
                 zoom = -5;
                 strafe = 0;
                 break;
             }
-            case KeyEvent.VK_4: {
+            case KeyEvent.VK_4:
+            {
                 lookatcamera = 4;
                 zoom = -5f;
                 strafe = 0;
                 break;
             }
-            case KeyEvent.VK_5: {
+            case KeyEvent.VK_5:
+            {
                 lookatcamera = 5;
                 zoom = 5f;
                 strafe = 0;
                 break;
             }
-            case KeyEvent.VK_6: {
+            case KeyEvent.VK_6:
+            {
                 lookatcamera = 6;
                 zoom = 5f;
                 strafe = 0;
                 upDown = 10;
                 break;
             }
-            case KeyEvent.VK_7: {
+            case KeyEvent.VK_7:
+            {
                 lookatcamera = 7;
                 zoom = -0.5f;
                 strafe = 0;
                 break;
             }
-            case KeyEvent.VK_8: {
+            case KeyEvent.VK_8:
+            {
                 lookatcamera = 8;
                 zoom = -0.5f;
                 strafe = 0;
                 break;
             }
-            case KeyEvent.VK_9: {
+            case KeyEvent.VK_9:
+            {
                 lookatcamera = 9;
                 zoom = -0.5f;
                 strafe = 0;
@@ -789,11 +827,13 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     }
 
     @Override
-    public void keyReleased(KeyEvent e) {
+    public void keyReleased(KeyEvent e)
+    {
 
     }
 
-    private void keyMaping() {
+    private void keyMaping()
+    {
         int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
         InputMap imap = this.getRootPane().getInputMap(mapName);
         ActionMap amap = this.getRootPane().getActionMap();
@@ -854,57 +894,73 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
 
-    private class ZoomIn extends AbstractAction {
+    private class ZoomIn extends AbstractAction
+    {
         @Override
         public void actionPerformed(ActionEvent e) {
-            Ass2.zoom += 5f;
-            //System.out.println("zoom + 1.0");
+            Vector3D t = new Vector3D();
+            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
+            t.scale(-0.5f);
+            xyz = xyz.add(t);
         }
     }
 
 
-    private class ZoomOut extends AbstractAction {
+    private class ZoomOut extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
-            Ass2.zoom -= 5f;
-            //System.out.println("zoom - 1.0");
+        public void actionPerformed(ActionEvent e)
+        {
+            Vector3D t = new Vector3D();
+            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
+            t.scale(0.5f);
+            xyz = xyz.add(t);
         }
     }
 
-    private class StrafeRight extends AbstractAction {
+    private class StrafeRight extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
             Ass2.strafe += 5f;
             //System.out.println("zoom - 1.0");
         }
     }
 
-    private class StrafeLeft extends AbstractAction {
+    private class StrafeLeft extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
             Ass2.strafe -= 5f;
             //System.out.println("zoom - 1.0");
         }
     }
-    private class down extends AbstractAction {
+    private class down extends AbstractAction
+    {
         @Override
         public void actionPerformed(ActionEvent e) {
             upDown -= 5f;
         }
     }
 
-    private class up extends AbstractAction {
+    private class up extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
 
             upDown += 5f;
 
         }
     }
 
-    private class panRight extends AbstractAction {
+    private class panRight extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
             Matrix3D r = new Matrix3D();
             r.rotate(-10, v.normalize());
             n = n.mult(r);
@@ -912,9 +968,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         }
     }
-    private class panLeft extends AbstractAction {
+    private class panLeft extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
             Matrix3D r = new Matrix3D();
             r.rotate(+10, v.normalize());
             n = n.mult(r);
@@ -923,9 +981,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
     }
 
-    private class pitchUp extends AbstractAction {
+    private class pitchUp extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
             Matrix3D r = new Matrix3D();
             r.rotate(10, u.normalize());
             n = n.mult(r);
@@ -933,9 +993,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
     }
 
-    private class pitchDown extends AbstractAction {
+    private class pitchDown extends AbstractAction
+    {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
             Matrix3D r = new Matrix3D();
             r.rotate(-10, u.normalize());
             n = n.mult(r);
