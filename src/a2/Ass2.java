@@ -77,11 +77,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private int vao[] = new int[1];
     private int vbo[] = new int[20];
     private float cameraX, cameraY, cameraZ;
-    private float x[] = new float[5];
-    private float y[] = new float[5];
-    private float z[] = new float[5];
-    private float r[] = new float[5];
-    private float s[] = new float[5];
+    private float x[] = new float[100];
+    private float y[] = new float[100];
+    private float z[] = new float[100];
+    private float r[] = new float[100];
+    private float s[] = new float[100];
     private float scalefactor = 0;
 
     private int rendering_program;
@@ -111,6 +111,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private int uranusRingTexture;
     private int neptuneTexture;
     private int plutoTexture;
+    private int skydomeTexture;
     private int[] samplers = new int[2];
     private Vector3D u = new Vector3D(1, 0, 0);
     private Vector3D v = new Vector3D(0, 1, 0);
@@ -148,6 +149,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         setupVertices(gl);
         upDown = 10;
         zoom = -100;
+        xyz.setZ(20);
+        xyz.setX(-15);
+
         // could be handleed directly with layout in frag shader
         int tx_loc = gl.glGetUniformLocation(rendering_program, "s");
         gl.glGenSamplers(1, samplers, 0);
@@ -167,6 +171,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         neptuneTexture = tr.loadTexture(drawable, "textures/neptunemap.jpg");
         plutoTexture = tr.loadTexture(drawable, "textures/plutomap1k.jpg");
         solarflareTexture = tr.loadTexture(drawable, "textures/solarflare.png");
+        skydomeTexture    = tr.loadTexture(drawable, "textures/milkywayTexture.jpg");
         animator = new Animator(myCanvas);
         Thread thread =
                 new Thread(new Runnable(){ public void run() { animator.start();}});
@@ -313,6 +318,25 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
             pmvMatrix.glPopMatrix();
         }
+        //-----------------------   == universe
+        pmvMatrix.glPushMatrix();
+        pmvMatrix.glScalef(9999, 9999, 9999);
+        pmvMatrix.glPushMatrix();
+        gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        setupGl(gl);
+        gl.glFrontFace(GL_CCW);
+        //gl.glEnable(GL_BLEND);
+        //gl.glBlendEquation(GL_FUNC_ADD);
+        //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
+        //gl.glBlendFunc(GL_ONE, GL_ZERO);
+        gl.glBindTexture(GL_TEXTURE_2D, skydomeTexture);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        gl.glDisable(GL_BLEND);
+        pmvMatrix.glPopMatrix();
+        pmvMatrix.glPopMatrix();// poping
+
         // ----------------------   == sun
         pmvMatrix.glPushMatrix();
         pmvMatrix.glTranslatef(0, 0, 0);
@@ -327,10 +351,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         //--------------------------------- solar flare \
 
-        if (System.currentTimeMillis() % 100 == 0)
+        if (System.currentTimeMillis() % 100 == 0 )
         {
             scalefactor = 0;
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 10; i++) {
                 x[i] = (rand.nextFloat());
                 y[i] = (rand.nextFloat());
                 z[i] = (rand.nextFloat());
@@ -347,13 +371,13 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
         scalefactor += 0.05;
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 10; i++)
         {
 
             pmvMatrix.glPushMatrix();
             pmvMatrix.glTranslatef(x[i], y[i], z[i]);
             //pmvMatrix.glRotatef(20,1,1,1);
-            float ss = s[i] + (float) Math.sin(scalefactor) / 10;
+            float ss = s[i] + (float) Math.sin(scalefactor) / 20;
             pmvMatrix.glScalef(ss, ss, ss);
             gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
             gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
@@ -364,7 +388,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glEnable(GL_BLEND);
             //gl.glBlendEquation(GL_FUNC_ADD);
             //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            //gl.glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+            //gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
             gl.glBlendFunc(GL_ONE, GL_ONE);
             gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
             gl.glDisable(GL_BLEND);
@@ -503,7 +527,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         pmvMatrix.glPopMatrix();
         pmvMatrix.glPopMatrix();// poping uranus
-//-----------------------   == neptune
+        //-----------------------   == neptune
         pmvMatrix.glPushMatrix();
         pmvMatrix.glTranslatef((float) Math.sin(orbitSpeed[2]) * neptuneDistance, 0.0f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance);
         pmvMatrix.glScalef(neptuneSize, neptuneSize, neptuneSize);
@@ -529,6 +553,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         pmvMatrix.glPopMatrix();
         pmvMatrix.glPopMatrix();// poping pluto
+
+
 
         if (lookatcamera == 0) pmvMatrix.glPopMatrix();// poping the camera!!!
 
@@ -724,13 +750,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             t.scale(0.5f);
             xyz = xyz.add(t);
             zoom += 1f;
+            System.out.println("wheels down size is " + xyz.getZ());
         } else {
-            System.out.println("wheels down size is " + zoom);
+
             Vector3D t = new Vector3D();
             t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
             t.scale(-0.5f);
             xyz = xyz.add(t);
             zoom -= 1f;
+            System.out.println("wheels down size is " + xyz.getZ());
         }
     }
 
