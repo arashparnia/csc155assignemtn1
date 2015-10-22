@@ -90,6 +90,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private float scalefactor = 0;
 
     private int rendering_program;
+    private int rendering_program_axis;
+
     private int VAO[] = new int[1];
     private GLSLUtils util = new GLSLUtils();
     private float upDown = 0.0f;
@@ -150,7 +152,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     {
         //this.getRootPane().requestFocus();
         GL4 gl = (GL4) drawable.getGL();
-        rendering_program = createShaderPrograms(drawable);
+        rendering_program = createShaderPrograms(drawable,"a2shaders/vert.glsl","a2shaders/frag.glsl");
+        rendering_program_axis = createShaderPrograms(drawable,"a2shaders/axisvert.glsl","a2shaders/axisfrag.glsl");
+
         setupVertices(gl);
         upDown = 10;
         zoom = -100;
@@ -242,6 +246,35 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         PMVMatrix pmvMatrix = new PMVMatrix();
         // push view matrix onto the stack
 
+
+//            // ----------------------   == X-AXIS
+//            pmvMatrix.glPushMatrix();
+//            pmvMatrix.glTranslatef(0, 0, 0);
+//            pmvMatrix.glScalef(1000f, 0.01f, 0.01f);
+//            gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
+//            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//            setupGl(gl);
+//            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//            pmvMatrix.glPopMatrix();
+//            // ----------------------   == Y-AXIS
+//            pmvMatrix.glPushMatrix();
+//            pmvMatrix.glTranslatef(0, 0, 0);
+//            pmvMatrix.glScalef(0.01f, 1000f, 0.01f);
+//            gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
+//            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//            setupGl(gl);
+//            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//            pmvMatrix.glPopMatrix();
+//            // ----------------------   == Z-AXIS
+//            pmvMatrix.glPushMatrix();
+//            pmvMatrix.glTranslatef(0, 0, 0);
+//            pmvMatrix.glScalef(0.01f, 0.01f, 1000f);
+//            gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
+//            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//            setupGl(gl);
+//            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//            pmvMatrix.glPopMatrix();
+//        }
         // --------------------------- CAMERA
 
         if (lookatcamera == 0)
@@ -295,36 +328,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
                     0, 1, 0);
 
 
-        if (axis)
-        {
-            // ----------------------   == X-AXIS
-            pmvMatrix.glPushMatrix();
-            pmvMatrix.glTranslatef(0, 0, 0);
-            pmvMatrix.glScalef(1000f, 0.01f, 0.01f);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-            setupGl(gl);
-            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-            pmvMatrix.glPopMatrix();
-            // ----------------------   == Y-AXIS
-            pmvMatrix.glPushMatrix();
-            pmvMatrix.glTranslatef(0, 0, 0);
-            pmvMatrix.glScalef(0.01f, 1000f, 0.01f);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-            setupGl(gl);
-            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-            pmvMatrix.glPopMatrix();
-            // ----------------------   == Z-AXIS
-            pmvMatrix.glPushMatrix();
-            pmvMatrix.glTranslatef(0, 0, 0);
-            pmvMatrix.glScalef(0.01f, 0.01f, 1000f);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-            setupGl(gl);
-            gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-            pmvMatrix.glPopMatrix();
-        }
+
         //-----------------------   == universe
         pmvMatrix.glPushMatrix();
         pmvMatrix.glScalef(9999, 9999, 9999);
@@ -565,7 +569,18 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         pmvMatrix.glPopMatrix();// poping pluto
 
 
+        if (axis) {
+            //pmvMatrix.glPushMatrix();
 
+
+            gl.glUseProgram(rendering_program_axis);
+            mv_loc = gl.glGetUniformLocation(rendering_program_axis, "mv_matrix");
+            proj_loc = gl.glGetUniformLocation(rendering_program_axis, "proj_matrix");
+            gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
+            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            gl.glDisableVertexAttribArray(1);
+            gl.glDrawArrays(GL_LINES, 0, 6);
+        }
         if (lookatcamera == 0) pmvMatrix.glPopMatrix();// poping the camera!!!
 
     }
@@ -659,7 +674,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         return rt;
     }
 
-    private int createShaderPrograms(GLAutoDrawable drawable)
+    private int createShaderPrograms(GLAutoDrawable drawable,String vert,String frag)
     {
         int[] vertCompiled = new int[1];
         int[] fragCompiled = new int[1];
@@ -667,8 +682,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         GL4 gl = (GL4) drawable.getGL();
 
-        String vshaderSource[] = GLSLUtils.readShaderSource("a2shaders/vert.glsl");
-        String fshaderSource[] = GLSLUtils.readShaderSource("a2shaders/frag.glsl");
+        String vshaderSource[] = GLSLUtils.readShaderSource(vert);
+        String fshaderSource[] = GLSLUtils.readShaderSource(frag);
         int lengths[];
 
         int vShader = gl.glCreateShader(GL4.GL_VERTEX_SHADER);
