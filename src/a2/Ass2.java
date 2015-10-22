@@ -1,5 +1,6 @@
 package a2;
 
+import com.jogamp.newt.event.*;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -15,6 +16,10 @@ import graphicslib3D.shape.Sphere;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.nio.FloatBuffer;
 import java.util.Random;
 
@@ -24,7 +29,7 @@ import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 import static com.jogamp.opengl.GL4.*;
 
 
-public class Ass2 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener {
+public class Ass2 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener, com.jogamp.newt.event.KeyListener {
 
     //glScalefd at 10 billion
     private static final float sunSize = 13.39f; //cm
@@ -46,19 +51,19 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     //private float MarsOrbit = 22.8 //m
 
     private static final float jupiterSize = 1.43f;//1.43 cm
-    private static final float jupiterDistance = 77f; //778,400,000
+    private static final float jupiterDistance = 57f; //778,400,000
     //private float JupiterOrbit = 77.8 //m
 
     private static final float saturnSize = 1.2f;//1.2 cm
-    private static final float saturnDistance = 142f; // 1,423,600,000
+    private static final float saturnDistance = 77f; // 1,423,600,000
     //private float SaturnOrbit = 142.4 //m
 
     private static final float uranusSize = 0.5f;//0.51 cm
-    private static final float uranusDistance = 286f; // 2,867,000,000
+    private static final float uranusDistance = 87f; // 2,867,000,000
     //private float UranusOrbit =  286.7 //m
 
     private static final float neptuneSize = 0.49f;//0.49 cm
-    private static final float neptuneDistance = 448f; //4,488,400,000
+    private static final float neptuneDistance = 97f; //4,488,400,000
     //private float NeptuneOrbit = 448.9 //m
 
     private static final float plutoSize = 0.02f; // 0.02 cm
@@ -224,9 +229,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         int proj_loc = gl.glGetUniformLocation(rendering_program, "proj_matrix");
 
         double orbitSpeed[] = new double[15];
+        float ii = 8.0f;
         for (int i = 0; i < 15; i++)
         {
-            orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * i);
+            ii-=0.3f;
+            orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * ii);
         }
         float aspect = myCanvas.getWidth() / myCanvas.getHeight();
         Matrix3D pMat = perspective(60.0f, aspect, 0.001f, 10000.0f);
@@ -239,51 +246,51 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         if (lookatcamera == 0)
         {
-            pmvMatrix.glPushMatrix();
+           pmvMatrix.glPushMatrix();
             pmvMatrix.glMultMatrixf(getUVNCamera().getFloatValues(), 0);
         } else if (lookatcamera == 1)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[9]) * mercuryDistance - zoom, 0.0f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance - zoom,
+                    (float) Math.sin(orbitSpeed[9]) * mercuryDistance - zoom/100, 0.0f , (float) Math.cos(orbitSpeed[9]) * mercuryDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[9]) * mercuryDistance, 0.00f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance,
                     0, 1, 0);
         else if (lookatcamera == 2)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[8]) * venusDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[8]) * venusDistance - zoom,
+                    (float) Math.sin(orbitSpeed[8]) * venusDistance - zoom/100, 0.0f, (float) Math.cos(orbitSpeed[8]) * venusDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[8]) * venusDistance, 0.00f, (float) Math.cos(orbitSpeed[8]) * venusDistance,
                     0, 1, 0);
         else if (lookatcamera == 3)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[7]) * earthDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom,
+                    (float) Math.sin(orbitSpeed[7]) * earthDistance - zoom/100, 0.0f , (float) Math.cos(orbitSpeed[7]) * earthDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[7]) * earthDistance, 0.00f, (float) Math.cos(orbitSpeed[7]) * earthDistance,
                     0, 1, 0);
         else if (lookatcamera == 4)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[6]) * marsDistance - zoom, 0.2f, (float) Math.cos(orbitSpeed[6]) * marsDistance - zoom,
+                    (float) Math.sin(orbitSpeed[6]) * marsDistance - zoom/100, 0.2f, (float) Math.cos(orbitSpeed[6]) * marsDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[6]) * marsDistance, 0.00f, (float) Math.cos(orbitSpeed[6]) * marsDistance,
                     0, 1, 0);
         else if (lookatcamera == 5)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance - zoom, 1f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance - zoom,
+                    (float) Math.sin(orbitSpeed[5]) * jupiterDistance - zoom/100, 1f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.00f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance,
                     0, 1, 0);
         else if (lookatcamera == 6)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[4]) * saturnDistance - zoom, 1f, (float) Math.cos(orbitSpeed[4]) * saturnDistance - zoom,
+                    (float) Math.sin(orbitSpeed[4]) * saturnDistance - zoom/100, 1f, (float) Math.cos(orbitSpeed[4]) * saturnDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.00f, (float) Math.cos(orbitSpeed[4]) * saturnDistance,
                     0, 1, 0);
         else if (lookatcamera == 7)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[3]) * uranusDistance - zoom, 1f, (float) Math.cos(orbitSpeed[3]) * uranusDistance - zoom,
+                    (float) Math.sin(orbitSpeed[3]) * uranusDistance - zoom/100, 1f, (float) Math.cos(orbitSpeed[3]) * uranusDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.00f, (float) Math.cos(orbitSpeed[3]) * uranusDistance,
                     0, 1, 0);
         else if (lookatcamera == 8)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[2]) * neptuneDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance - zoom,
+                    (float) Math.sin(orbitSpeed[2]) * neptuneDistance - zoom/100, 0.1f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[2]) * neptuneDistance, 0.00f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance,
                     0, 1, 0);
         else if (lookatcamera == 9)
             pmvMatrix.gluLookAt(
-                    (float) Math.sin(orbitSpeed[1]) * plutoDistance - zoom, 0.1f, (float) Math.cos(orbitSpeed[1]) * plutoDistance - zoom,
+                    (float) Math.sin(orbitSpeed[1]) * plutoDistance - zoom/100, 0.1f, (float) Math.cos(orbitSpeed[1]) * plutoDistance - zoom/100,
                     (float) Math.sin(orbitSpeed[1]) * plutoDistance, 0.00f, (float) Math.cos(orbitSpeed[1]) * plutoDistance,
                     0, 1, 0);
 
@@ -438,7 +445,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         pmvMatrix.glPopMatrix();
         //-----------------------   == earth moon
         pmvMatrix.glPushMatrix();
-        pmvMatrix.glTranslatef((float) Math.sin(orbitSpeed[1] / 10) * 2, 0f, (float) Math.cos(orbitSpeed[1] / 10) * 2);
+        pmvMatrix.glTranslatef((float) Math.sin(orbitSpeed[9] ) * 2, 0f, (float) Math.cos(orbitSpeed[9]) * 2);
         pmvMatrix.glScalef(earthSize / 1.1f, earthSize / 1.1f, earthSize / 1.1f);
         pmvMatrix.glRotatef(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
         gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
@@ -448,6 +455,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         pmvMatrix.glPopMatrix();
         pmvMatrix.glPopMatrix();// poping earth
+
+
         //-----------------------   == mars
         pmvMatrix.glPushMatrix();
         pmvMatrix.glTranslatef((float) Math.sin(orbitSpeed[6]) * marsDistance, 0.0f, (float) Math.cos(orbitSpeed[6]) * marsDistance);
@@ -461,6 +470,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         pmvMatrix.glPopMatrix();
         pmvMatrix.glPopMatrix();// poping mars
+
 
         //-----------------------   == jupiter
         pmvMatrix.glPushMatrix();
@@ -519,7 +529,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         pmvMatrix.glTranslatef((float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.0f, (float) Math.cos(orbitSpeed[3]) * uranusDistance);
         pmvMatrix.glScalef(uranusSize, uranusSize, uranusSize);
         pmvMatrix.glPushMatrix();
-        pmvMatrix.glRotatef(-degreePerSec(0.005f), 0, 1, 0);
+        pmvMatrix.glRotatef(-degreePerSec(0.05f), 0, 1, 0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, pmvMatrix.glGetMvMatrixf());
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
         setupGl(gl);
@@ -726,18 +736,6 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     {
 //        if ("up".equals(e.getActionCommand()) && upDown < 1) {
 //            upDown += 0.1;
-//        } else if ("down".equals(e.getActionCommand()) && upDown > -1) {
-//            upDown -= 0.1;
-//        } else if ("color".equals(e.getActionCommand())) {
-//            if (g != 2) g = 2;
-//            else g = 1;
-//        } else
-//        if ("noise".equals(e.getActionCommand())) {
-//            if (n != 0.0) n = 0.0f;
-//            else n = 1.0f;
-//        }
-//        else if ("autozoom".equals(e.getActionCommand())) {
-//            autozoom = !autozoom;
 //        }
     }
 
@@ -920,6 +918,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     }
 
+    @Override
+    public void keyPressed(com.jogamp.newt.event.KeyEvent keyEvent) {
+        System.out.print("key pressed jogl");
+    }
+
+    @Override
+    public void keyReleased(com.jogamp.newt.event.KeyEvent keyEvent) {
+
+    }
 
 
     private class ZoomIn extends AbstractAction
@@ -951,6 +958,11 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         @Override
         public void actionPerformed(ActionEvent e)
         {
+            Vector3D t = new Vector3D();
+            t.setX(u.getX());t.setY(u.getY());t.setZ(u.getZ());
+            t.scale(0.5f);
+            xyz = xyz.add(t);
+            Ass2.strafe -= 5f;
             Ass2.strafe += 5f;
             //System.out.println("zoom - 1.0");
         }
@@ -961,6 +973,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         @Override
         public void actionPerformed(ActionEvent e)
         {
+            Vector3D t = new Vector3D();
+            t.setX(u.getX());t.setY(u.getY());t.setZ(u.getZ());
+            t.scale(-0.5f);
+            xyz = xyz.add(t);
             Ass2.strafe -= 5f;
             //System.out.println("zoom - 1.0");
         }
@@ -968,7 +984,12 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     private class down extends AbstractAction
     {
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
+            Vector3D t = new Vector3D();
+            t.setX(v.getX());t.setY(v.getY());t.setZ(v.getZ());
+            t.scale(-0.5f);
+            xyz = xyz.add(t);
             upDown -= 5f;
         }
     }
@@ -978,7 +999,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         @Override
         public void actionPerformed(ActionEvent e)
         {
-
+            Vector3D t = new Vector3D();
+            t.setX(v.getX());t.setY(v.getY());t.setZ(v.getZ());
+            t.scale(0.5f);
+            xyz = xyz.add(t);
             upDown += 5f;
 
         }
