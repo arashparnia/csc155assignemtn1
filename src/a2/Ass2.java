@@ -162,11 +162,9 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     {
         //this.getRootPane().requestFocus();
         GL4 gl = (GL4) drawable.getGL();
-        rendering_program = createShaderPrograms(drawable,"a2shaders/vert.glsl","a2shaders/frag.glsl");
+        //rendering_program = createShaderPrograms(drawable,"a2shaders/vert.glsl","a2shaders/frag.glsl");
         rendering_program_axis = createShaderPrograms(drawable,"a2shaders/axisvert.glsl","a2shaders/axisfrag.glsl");
         rendering_program_gouraud_lighting = createShaderPrograms(drawable,"a2shaders/gouraudvert.glsl","a2shaders/gouraudfrag.glsl");
-
-
 
 
         setupVertices(gl);
@@ -176,7 +174,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         xyz.setX(-15);
 
         // could be handleed directly with layout in frag shader
-        int tx_loc = gl.glGetUniformLocation(rendering_program, "s");
+        int tx_loc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "s");
         gl.glGenSamplers(1, samplers, 0);
         gl.glBindSampler(0, tx_loc);
         sunTexture = tr.loadTexture(drawable, "textures/sunmap.jpg");
@@ -233,11 +231,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
 
-        gl.glClear(GL_DEPTH_BUFFER_BIT);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
-        //gl.glEnable(GL_DEPTH_TEST);
-        //gl.glDepthFunc(GL_ALWAYS);
+        gl.glEnable(GL_DEPTH_TEST);
+        //gl.glDepthFunc(GL_EQUAL);
 
 
     }
@@ -313,23 +310,23 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
         else if (lookatcamera == 5)
         {
-            xyz.setX((float) Math.sin(orbitSpeed[5]) * jupiterDistance );
+            xyz.setX((float) Math.sin(orbitSpeed[5]) * jupiterDistance + zoom);
             xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[5]) * jupiterDistance );
+            xyz.setZ((float) Math.cos(orbitSpeed[5]) * jupiterDistance + zoom);
             mvStack.multMatrix(getUVNCamera());
         }
         else if (lookatcamera == 6)
         {
-            xyz.setX((float) Math.sin(orbitSpeed[4]) * saturnDistance );
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[4]) * saturnDistance );
+            xyz.setX((float) Math.sin(orbitSpeed[4]) * saturnDistance  + zoom);
+            xyz.setY(0+ zoom);
+            xyz.setZ((float) Math.cos(orbitSpeed[4]) * saturnDistance  + zoom);
             mvStack.multMatrix(getUVNCamera());
         }
         else if (lookatcamera == 7)
         {
-            xyz.setX((float) Math.sin(orbitSpeed[3]) * uranusDistance );
+            xyz.setX((float) Math.sin(orbitSpeed[3]) * uranusDistance + zoom);
             xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[3]) * uranusDistance );
+            xyz.setZ((float) Math.cos(orbitSpeed[3]) * uranusDistance  + zoom);
             mvStack.multMatrix(getUVNCamera());
         }
         else if (lookatcamera == 8)
@@ -346,8 +343,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             xyz.setZ((float) Math.cos(orbitSpeed[1]) * plutoDistance );
             mvStack.multMatrix(getUVNCamera());
         }
-        lightLoc.setX(-xyz.getX()); lightLoc.setY(-xyz.getY()); lightLoc.setZ(-xyz.getZ());
-        currentLight.setPosition(lightLoc);
+        //lightLoc.setX(-xyz.getX()); lightLoc.setY(-xyz.getY()); lightLoc.setZ(-xyz.getZ());
+        //currentLight.setPosition(lightLoc);
         installLights(mvStack.peek(), drawable);
         //-----------------------   == universe
         mvStack.pushMatrix();
@@ -358,14 +355,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glUniformMatrix4fv(n_location, 1, false, (mv_matrix.inverse()).transpose().getFloatValues(),0);
         setupGl(gl);
         gl.glFrontFace(GL_CCW);
-        //gl.glEnable(GL_BLEND);
-        //gl.glBlendEquation(GL_FUNC_ADD);
-        //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        //gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
-        //gl.glBlendFunc(GL_ONE, GL_ZERO);
         gl.glBindTexture(GL_TEXTURE_2D, skydomeTexture);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        //gl.glDisable(GL_BLEND);
         mvStack.popMatrix();
         mvStack.popMatrix();// poping
 
@@ -382,53 +373,53 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindTexture(GL_TEXTURE_2D, sunTexture);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
 
-//        //--------------------------------- solar flare \
-//
-//        if (System.currentTimeMillis() % 100 == 0 )
-//        {
-//            scalefactor = 0;
-//            for (int i = 0; i < 10; i++) {
-//                x[i] = (rand.nextFloat());
-//                y[i] = (rand.nextFloat());
-//                z[i] = (rand.nextFloat());
-//                r[i] = (float) Math.sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
-//                x[i] /= r[i];
-//                y[i] /= r[i];
-//                z[i] /= r[i];
-//                if (rand.nextBoolean()) x[i] = -x[i];
-//                if (rand.nextBoolean()) y[i] = -y[i];
-//                if (rand.nextBoolean()) z[i] = -z[i];
-//                s[i] = 0.01f + (rand.nextFloat() / 10);
-//
-//            }
-//        }
-//        scalefactor += 0.05;
-//
-//        for (int i = 0; i < 10; i++)
-//        {
-//
-//            mvStack.pushMatrix();
-//            mvStack.translate(x[i], y[i], z[i]);
-//            //mvStack.rotate(20,1,1,1);
-//            float ss = s[i] + (float) Math.sin(scalefactor) / 20;
-//            mvStack.scale(ss, ss, ss);
-//            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-//            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-//            gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-//
-//            setupGl(gl);
-//            gl.glBindTexture(GL_TEXTURE_2D, solarflareTexture);
-//            //gl.glCullFace(GL_CCW);
-//            // Enable blending
-//            gl.glEnable(GL_BLEND);
-//            //gl.glBlendEquation(GL_FUNC_ADD);
-//            //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//            gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
-//           // gl.glBlendFunc(GL_ONE, GL_ONE);
-//            gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
-//            gl.glDisable(GL_BLEND);
-//            mvStack.popMatrix();// poping solar flare
-//        }
+        //--------------------------------- solar flare \
+
+        if (System.currentTimeMillis() % 100 == 0 )
+        {
+            scalefactor = 0;
+            for (int i = 0; i < 10; i++) {
+                x[i] = (rand.nextFloat());
+                y[i] = (rand.nextFloat());
+                z[i] = (rand.nextFloat());
+                r[i] = (float) Math.sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
+                x[i] /= r[i];
+                y[i] /= r[i];
+                z[i] /= r[i];
+                if (rand.nextBoolean()) x[i] = -x[i];
+                if (rand.nextBoolean()) y[i] = -y[i];
+                if (rand.nextBoolean()) z[i] = -z[i];
+                s[i] = 0.01f + (rand.nextFloat() / 10);
+
+            }
+        }
+        scalefactor += 0.05;
+
+        for (int i = 0; i < 10; i++)
+        {
+
+            mvStack.pushMatrix();
+            mvStack.translate(x[i], y[i], z[i]);
+            //mvStack.rotate(20,1,1,1);
+            float ss = s[i] + (float) Math.sin(scalefactor) / 20;
+            mvStack.scale(ss, ss, ss);
+            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+            gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+
+            setupGl(gl);
+            gl.glBindTexture(GL_TEXTURE_2D, solarflareTexture);
+            //gl.glCullFace(GL_CCW);
+            // Enable blending
+            gl.glEnable(GL_BLEND);
+            //gl.glBlendEquation(GL_FUNC_ADD);
+            //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            //gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
+            gl.glBlendFunc(GL_ONE, GL_ONE);
+            gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
+            gl.glDisable(GL_BLEND);
+            mvStack.popMatrix();// poping solar flare
+        }
 
         mvStack.popMatrix();// poping sun rotation
         //mvStack.popMatrix();
@@ -712,7 +703,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
         Point3D lightP = currentLight.getPosition();
         Point3D lightPv = lightP.mult(v_matrix);
-        float [] currLightPos = new float[] { (float) lightPv.getX(), (float) lightPv.getY(), (float) lightPv.getZ() };
+        float [] currLightPos =  new float[] { (float) lightPv.getX(), (float) lightPv.getY(), (float) lightPv.getZ() };
 
         // set the current globalAmbient settings
         int globalAmbLoc = gl.glGetUniformLocation(rendering_program, "globalAmbient");
@@ -738,6 +729,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glProgramUniform4fv(rendering_program_gouraud_lighting, MspecLoc, 1, currentMaterial.getSpecular(), 0);
         gl.glProgramUniform1f(rendering_program_gouraud_lighting, MshiLoc, currentMaterial.getShininess());
     }
+
     private int createShaderPrograms(GLAutoDrawable drawable,String vert,String frag)
     {
         int[] vertCompiled = new int[1];
@@ -829,7 +821,6 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             zoom += 1f;
             System.out.println("wheels down size is " + xyz.getZ());
         } else {
-
             Vector3D t = new Vector3D();
             t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
             t.scale(-0.5f);
@@ -895,25 +886,25 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             case KeyEvent.VK_5:
             {
                 lookatcamera = 5;
-                zoom = 250f;
+                zoom = 5f;
                 break;
             }
             case KeyEvent.VK_6:
             {
                 lookatcamera = 6;
-                zoom = 250f;
+                zoom = 5f;
                 break;
             }
             case KeyEvent.VK_7:
             {
                 lookatcamera = 7;
-                zoom = 250f;
+                zoom = 5f;
                 break;
             }
             case KeyEvent.VK_8:
             {
                 lookatcamera = 8;
-                zoom = 250f;
+                zoom = 5f;
                 break;
             }
             case KeyEvent.VK_9:
@@ -1011,6 +1002,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
             t.scale(-0.5f);
             xyz = xyz.add(t);
+            zoom += 1f;
         }
     }
 
@@ -1024,6 +1016,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
             t.scale(0.5f);
             xyz = xyz.add(t);
+            if  (zoom > 1 )zoom -= 1f;
         }
     }
 

@@ -27,9 +27,8 @@ uniform mat4 mv_matrix;
 uniform mat4 proj_matrix;
 uniform mat4 normalMat;
 uniform sampler2D s;
-//  interpolate lighted color
-// (interpolation of gl_Position is automatic)
+
 
 void main(void)
-{	fragColor = varyingColor*0.6 +  texture2D(s,tc)*0.4;
+{	fragColor = texture2D(s,tc);//*0.5 +  varyingColor*0.5 ;
 }
