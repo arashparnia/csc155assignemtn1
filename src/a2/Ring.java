@@ -21,10 +21,10 @@ public class Ring{
     {	prec = p;
         this.inner = inner ;
         this.outter =outter ;
-        InitSphere();
+        InitRing();
     }
 
-    public void InitSphere() {
+    public void InitRing() {
         numVertices = (prec + 1) * (prec + 1);
         numIndices = (prec + 1) * (prec) * 6;
         vertices = new Vertex3D[numVertices];
