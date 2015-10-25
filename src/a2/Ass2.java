@@ -331,16 +331,16 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
         else if (lookatcamera == 8)
         {
-            xyz.setX((float) Math.sin(orbitSpeed[2]) * neptuneDistance );
+            xyz.setX((float) Math.sin(orbitSpeed[2]) * neptuneDistance + zoom);
             xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[2]) * neptuneDistance );
+            xyz.setZ((float) Math.cos(orbitSpeed[2]) * neptuneDistance  + zoom);
             mvStack.multMatrix(getUVNCamera());
         }
         else if (lookatcamera == 9)
         {
             xyz.setX((float) Math.sin(orbitSpeed[1]) * plutoDistance );
             xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[1]) * plutoDistance );
+            xyz.setZ((float) Math.cos(orbitSpeed[1]) * plutoDistance  );
             mvStack.multMatrix(getUVNCamera());
         }
         //lightLoc.setX(-xyz.getX()); lightLoc.setY(-xyz.getY()); lightLoc.setZ(-xyz.getZ());
