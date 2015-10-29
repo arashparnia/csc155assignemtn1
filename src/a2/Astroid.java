@@ -5,6 +5,9 @@ package a2;
  */
 
         import graphicslib3D.*;
+
+        import java.util.Random;
+
         import static java.lang.Math.*;
 
 public class Astroid
@@ -12,6 +15,8 @@ public class Astroid
     private int numVertices, numIndices, prec=8;
     private int[] indices;
     private Vertex3D[] vertices;
+    private Random rand = new Random();
+
 
     public Astroid(int p)
     {	prec = p;
@@ -27,20 +32,16 @@ public class Astroid
         for (int i=0; i<numVertices; i++) { vertices[i] = new Vertex3D(); }
 
         // calculate triangle vertices
-        for (int i=0; i<=prec; i++)
-        {	for (int j=0; j<=prec; j++)
-        {	// calculate vertex location
+        for (int i=0; i<=prec; i++) {
+            for (int j=0; j<=prec; j++) {
+                // calculate vertex location
             float y = (float)cos(toRadians(180-i*180/prec));
-           double r =y;
-
-            if (i> prec/9  && i < prec - prec/9 && i %2 ==0)
-                if (i > prec/2)
-                r+=random()/6; else r-=random()/6;
-              //  while (r<0) r+= random()/5 ;
-               // while (r>0) r-= random()/5 ;
-
-            float x = -(float)cos(toRadians(j*360.0/prec))*(float)abs(cos(asin(r)));
-            float z = (float)sin(toRadians(j*360.0f/(float)(prec)))*(float)abs(cos(asin(r)));
+            float r=0;
+            if (i> prec/9  && i < prec - prec/9 && i %2 ==0 ) {
+                r  = (float)  random() ;
+            }
+            float x = -(float)cos(toRadians(j*360.0/prec))*(float)abs(cos(asin(y))) + r;
+            float z = (float)sin(toRadians(j*360.0f/(float)(prec)))*(float)abs(cos(asin(y))) + r;
             vertices[i*(prec+1)+j].setLocation(new Point3D(x,y,z));
 
             // calculate tangent vector

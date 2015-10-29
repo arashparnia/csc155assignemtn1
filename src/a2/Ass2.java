@@ -1,3 +1,5 @@
+// todo : create seperate shader for sun
+
 package a2;
 
 import com.jogamp.newt.event.*;
@@ -89,7 +91,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     private int rendering_program;
     private int rendering_program_axis;
-    private int rendering_program_gouraud_lighting;
+   private int  rendering_program_no_lighting;
+    private int rendering_program_blinnphong_lighting;
 
     private int VAO[] = new int[1];
     private GLSLUtils util = new GLSLUtils();
@@ -99,7 +102,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     private Random rand;
 
-    private Sphere mySphere = new Sphere(48);
+    private Astroid mySphere = new Astroid(20);
     private Ring ring = new Ring(20, 40, 48);
     private TextureReader tr = new TextureReader();
     private int sunTexture;
@@ -163,8 +166,10 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         //this.getRootPane().requestFocus();
         GL4 gl = (GL4) drawable.getGL();
         //rendering_program = createShaderPrograms(drawable,"a2shaders/vert.glsl","a2shaders/frag.glsl");
-        rendering_program_axis = createShaderPrograms(drawable,"a2shaders/axisvert.glsl","a2shaders/axisfrag.glsl");
-        rendering_program_gouraud_lighting = createShaderPrograms(drawable,"a2shaders/gouraudvert.glsl","a2shaders/gouraudfrag.glsl");
+        Shader sh = new Shader();
+        rendering_program_axis = sh.createShaderPrograms(drawable,"a2shaders/axisvert.glsl","a2shaders/axisfrag.glsl");
+        rendering_program_no_lighting = sh.createShaderPrograms(drawable,"a2shaders/vert.glsl","a2shaders/frag.glsl");
+        rendering_program_blinnphong_lighting = sh.createShaderPrograms(drawable,"a2shaders/blinnphongvert.glsl","a2shaders/blinnphongfrag.glsl");
 
 
         setupVertices(gl);
@@ -174,7 +179,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         xyz.setX(-15);
 
         // could be handleed directly with layout in frag shader
-        int tx_loc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "s");
+        int tx_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "s");
         gl.glGenSamplers(1, samplers, 0);
         gl.glBindSampler(0, tx_loc);
         sunTexture = tr.loadTexture(drawable, "textures/sunmap.jpg");
@@ -247,12 +252,12 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         FloatBuffer background = FloatBuffer.allocate(4);
         gl.glClearBufferfv(GL_COLOR, 0, background);
 
-        gl.glUseProgram(rendering_program_gouraud_lighting);
+        gl.glUseProgram(rendering_program_blinnphong_lighting);
 
 
-        int mv_loc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "mv_matrix");
-        int proj_loc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "proj_matrix");
-        int n_location = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "normalMat");
+        int mv_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "mv_matrix");
+        int proj_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "proj_matrix");
+        int n_location = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "normalMat");
 
         double orbitSpeed[] = new double[15];
         float ii = 8.0f;
@@ -633,6 +638,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             }
 
 
+
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
             FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
             gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
@@ -700,97 +706,36 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
     {	GL4 gl = (GL4) drawable.getGL();
 
         Material currentMaterial = thisMaterial;
-
         Point3D lightP = currentLight.getPosition();
         Point3D lightPv = lightP.mult(v_matrix);
         float [] currLightPos =  new float[] { (float) lightPv.getX(), (float) lightPv.getY(), (float) lightPv.getZ() };
 
         // set the current globalAmbient settings
         int globalAmbLoc = gl.glGetUniformLocation(rendering_program, "globalAmbient");
-        gl.glProgramUniform4fv(rendering_program_gouraud_lighting, globalAmbLoc, 1, globalAmbient, 0);
+        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, globalAmbLoc, 1, globalAmbient, 0);
 
         // get the locations of the light and material fields in the shader
-        int ambLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "light.ambient");
-        int diffLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "light.diffuse");
-        int specLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "light.specular");
-        int posLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "light.position");
-        int MambLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "material.ambient");
-        int MdiffLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "material.diffuse");
-        int MspecLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "material.specular");
-        int MshiLoc = gl.glGetUniformLocation(rendering_program_gouraud_lighting, "material.shininess");
+        int ambLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.ambient");
+        int diffLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.diffuse");
+        int specLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.specular");
+        int posLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.position");
+        int MambLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.ambient");
+        int MdiffLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.diffuse");
+        int MspecLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.specular");
+        int MshiLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.shininess");
 
         //  set the uniform light and material values in the shader
-        gl.glProgramUniform4fv(rendering_program_gouraud_lighting, ambLoc, 1, currentLight.getAmbient(), 0);
-        gl.glProgramUniform4fv(rendering_program_gouraud_lighting, diffLoc, 1, currentLight.getDiffuse(), 0);
-        gl.glProgramUniform4fv(rendering_program_gouraud_lighting, specLoc, 1, currentLight.getSpecular(), 0);
-        gl.glProgramUniform3fv(rendering_program_gouraud_lighting, posLoc, 1, currLightPos, 0);
-        gl.glProgramUniform4fv(rendering_program_gouraud_lighting, MambLoc, 1, currentMaterial.getAmbient(), 0);
-        gl.glProgramUniform4fv(rendering_program_gouraud_lighting, MdiffLoc, 1, currentMaterial.getDiffuse(), 0);
-        gl.glProgramUniform4fv(rendering_program_gouraud_lighting, MspecLoc, 1, currentMaterial.getSpecular(), 0);
-        gl.glProgramUniform1f(rendering_program_gouraud_lighting, MshiLoc, currentMaterial.getShininess());
+        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, ambLoc, 1, currentLight.getAmbient(), 0);
+        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, diffLoc, 1, currentLight.getDiffuse(), 0);
+        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, specLoc, 1, currentLight.getSpecular(), 0);
+        gl.glProgramUniform3fv(rendering_program_blinnphong_lighting, posLoc, 1, currLightPos, 0);
+        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MambLoc, 1, currentMaterial.getAmbient(), 0);
+        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MdiffLoc, 1, currentMaterial.getDiffuse(), 0);
+        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MspecLoc, 1, currentMaterial.getSpecular(), 0);
+        gl.glProgramUniform1f(rendering_program_blinnphong_lighting, MshiLoc, currentMaterial.getShininess());
     }
 
-    private int createShaderPrograms(GLAutoDrawable drawable,String vert,String frag)
-    {
-        int[] vertCompiled = new int[1];
-        int[] fragCompiled = new int[1];
-        int[] linked = new int[1];
 
-        GL4 gl = (GL4) drawable.getGL();
-
-        String vshaderSource[] = GLSLUtils.readShaderSource(vert);
-        String fshaderSource[] = GLSLUtils.readShaderSource(frag);
-        int lengths[];
-
-        int vShader = gl.glCreateShader(GL4.GL_VERTEX_SHADER);
-        int fShader = gl.glCreateShader(GL4.GL_FRAGMENT_SHADER);
-
-        lengths = new int[vshaderSource.length];
-        for (int i = 0; i < lengths.length; i++) {
-            lengths[i] = vshaderSource[i].length();
-        }
-        gl.glShaderSource(vShader, vshaderSource.length, vshaderSource, lengths, 0);
-
-        lengths = new int[fshaderSource.length];
-        for (int i = 0; i < lengths.length; i++) {
-            lengths[i] = fshaderSource[i].length();
-        }
-        gl.glShaderSource(fShader, fshaderSource.length, fshaderSource, lengths, 0);
-
-        gl.glCompileShader(vShader);
-        GLSLUtils.printOpenGLError(drawable);  // can use returned boolean
-        gl.glGetShaderiv(vShader, GL4.GL_COMPILE_STATUS, vertCompiled, 0);
-        if (vertCompiled[0] == 1) {
-            System.out.println("vertex compilation success");
-        } else {
-            System.out.println("vertex compilation failed");
-            GLSLUtils.printShaderInfoLog(drawable, vShader);
-        }
-
-        gl.glCompileShader(fShader);
-        GLSLUtils.printOpenGLError(drawable);  // can use returned boolean
-        gl.glGetShaderiv(fShader, GL4.GL_COMPILE_STATUS, fragCompiled, 0);
-        if (fragCompiled[0] == 1) {
-            System.out.println("fragment compilation success");
-        } else {
-            System.out.println("fragment compilation failed");
-            GLSLUtils.printShaderInfoLog(drawable, fShader);
-        }
-
-        int vfprogram = gl.glCreateProgram();
-        gl.glAttachShader(vfprogram, vShader);
-        gl.glAttachShader(vfprogram, fShader);
-        gl.glLinkProgram(vfprogram);
-        GLSLUtils.printOpenGLError(drawable);
-        gl.glGetProgramiv(vfprogram, GL4.GL_LINK_STATUS, linked, 0);
-        if (linked[0] == 1) {
-            System.out.println("linking succeeded");
-        } else {
-            System.out.println("linking failed");
-            GLSLUtils.printProgramInfoLog(drawable, vfprogram);
-        }
-        return vfprogram;
-    }
 
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height)
     {
