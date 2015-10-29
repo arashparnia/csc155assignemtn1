@@ -36,12 +36,13 @@ public class Astroid
             for (int j=0; j<=prec; j++) {
                 // calculate vertex location
             float y = (float)cos(toRadians(180-i*180/prec));
-            float r=0;
+            float r=- 1;
             if (i> prec/9  && i < prec - prec/9 && i %2 ==0 ) {
-                r  = (float)  random() ;
+                r  +=(float)  random()/100 ;
+                //if (rand.nextBoolean()) r *= -1;
             }
-            float x = -(float)cos(toRadians(j*360.0/prec))*(float)abs(cos(asin(y))) + r;
-            float z = (float)sin(toRadians(j*360.0f/(float)(prec)))*(float)abs(cos(asin(y))) + r;
+            float x = (-(float)cos(toRadians(j*360.0/prec))*(float)abs(cos(asin(y)))) * r;
+            float z = ((float)sin(toRadians(j*360.0f/prec))*(float)abs(cos(asin(y)))) * r;
             vertices[i*(prec+1)+j].setLocation(new Point3D(x,y,z));
 
             // calculate tangent vector
