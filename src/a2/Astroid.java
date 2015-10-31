@@ -9,14 +9,22 @@ package a2;
         import java.util.Random;
 
         import static java.lang.Math.*;
+        import java.util.Random;
 
 public class Astroid
 {
     private int numVertices, numIndices, prec=8;
     private int[] indices;
     private Vertex3D[] vertices;
-    private Random rand = new Random();
+    private Random random = new Random();
 
+    public static int randInt(int min, int max) {
+        Random rand = new Random();
+        // nextInt is normally exclusive of the top value,
+        // so add 1 to make it inclusive
+        int randomNum = rand.nextInt((max - min) + 1) + min;
+        return randomNum;
+    }
 
     public Astroid(int p)
     {	prec = p;
@@ -36,13 +44,8 @@ public class Astroid
             for (int j=0; j<=prec; j++) {
                 // calculate vertex location
             float y = (float)cos(toRadians(180-i*180/prec));
-            float r=- 1;
-            if (i> prec/9  && i < prec - prec/9 && i %2 ==0 ) {
-                r  +=(float)  random()/100 ;
-                //if (rand.nextBoolean()) r *= -1;
-            }
-            float x = (-(float)cos(toRadians(j*360.0/prec))*(float)abs(cos(asin(y)))) * r;
-            float z = ((float)sin(toRadians(j*360.0f/prec))*(float)abs(cos(asin(y)))) * r;
+            float x = (-(float)cos(toRadians(j*360.0/prec))*(float)abs(cos(asin(y))));
+            float z = ((float)sin(toRadians(j*360.0f/prec))*(float)abs(cos(asin(y))));
             vertices[i*(prec+1)+j].setLocation(new Point3D(x,y,z));
 
             // calculate tangent vector
@@ -61,6 +64,13 @@ public class Astroid
             // calculate normal vector
             vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
         }	}
+
+        //vertex manipulation
+        for (int k = 0;k<500;k++) {
+            float d = 0.01f;
+            if (random.nextBoolean()) d *= -1;
+            carve(randInt(3, 97), randInt(3, 97), 3, d);
+        }
         // calculate triangle indices
         for(int i=0; i<prec; i++)
         {	for(int j=0; j<prec; j++)
@@ -78,5 +88,62 @@ public class Astroid
 
     public Vertex3D[] getVertices()
     {	return vertices;
+    }
+    public void carve (int centerx,int centery, int delta, float depth){
+        int centy =centery;
+        int centx = centerx;
+        int deltay = delta;
+        float deltab = depth;
+        int ne = centx;int nw = centx;
+        int se = centx;int sw = centx;
+        float b =1;
+        for (int i=centy+deltay; i>=centy; i--) {
+            ne--;b =1;
+            //north east
+            for (int j=ne; j<centx; j++) {
+                b+=deltab;
+                float x = (float) vertices[i * (prec + 1) + j].getX();
+                float y = (float) vertices[i * (prec + 1) + j].getY();
+                float z = (float) vertices[i * (prec + 1) + j].getZ();
+                vertices[i * (prec + 1) + j].setX(x * b);
+                vertices[i * (prec + 1) + j].setY(y * b);
+                vertices[i * (prec + 1) + j].setZ(z * b);
+            }
+            nw++;b=1;
+            for (int j=nw; j>=centx; j--) {
+                b+=deltab;
+                float x = (float) vertices[i * (prec + 1) + j].getX();
+                float y = (float) vertices[i * (prec + 1) + j].getY();
+                float z = (float) vertices[i * (prec + 1) + j].getZ();
+                vertices[i * (prec + 1) + j].setX(x * b);
+                vertices[i * (prec + 1) + j].setY(y * b);
+                vertices[i * (prec + 1) + j].setZ(z * b);
+            }
+        }
+        for (int i=centy-deltay; i<centy; i++) {
+            se--;b =1;
+            //north east
+            for (int j=se; j<centx; j++) {
+                b+=deltab;
+                float x = (float) vertices[i * (prec + 1) + j].getX();
+                float y = (float) vertices[i * (prec + 1) + j].getY();
+                float z = (float) vertices[i * (prec + 1) + j].getZ();
+                vertices[i * (prec + 1) + j].setX(x * b);
+                vertices[i * (prec + 1) + j].setY(y);
+                vertices[i * (prec + 1) + j].setZ(z * b);
+            }
+            sw++;b=1;
+            for (int j=sw; j>=centx; j--) {
+                b+=deltab;
+                float x = (float) vertices[i * (prec + 1) + j].getX();
+                float y = (float) vertices[i * (prec + 1) + j].getY();
+                float z = (float) vertices[i * (prec + 1) + j].getZ();
+                vertices[i * (prec + 1) + j].setX(x * b);
+                vertices[i * (prec + 1) + j].setY(y);
+                vertices[i * (prec + 1) + j].setZ(z * b);
+            }
+        }
+
+
     }
 }

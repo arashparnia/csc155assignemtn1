@@ -102,7 +102,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     private Random rand;
 
-    private Astroid mySphere = new Astroid(20);
+    private Astroid mySphere = new Astroid(100);
     private Ring ring = new Ring(20, 40, 48);
     private TextureReader tr = new TextureReader();
     private int sunTexture;
@@ -135,7 +135,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     graphicslib3D.Material thisMaterial = Material.SILVER;
     private PositionalLight currentLight = new PositionalLight();
-    private Point3D lightLoc = new Point3D(0f, 0f, 0f);
+    private Point3D lightLoc = new Point3D(10f,100f,-200f);
     float [] globalAmbient = new float[] { 0.1f, 0.1f, 0.1f, 1.0f };
 
 
@@ -175,8 +175,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         setupVertices(gl);
         upDown = 10;
         zoom = -100;
-        xyz.setZ(20);
-        xyz.setX(-15);
+        xyz.setZ(100);
+        xyz.setX(0);
 
         // could be handleed directly with layout in frag shader
         int tx_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "s");
@@ -237,7 +237,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glActiveTexture(GL_TEXTURE0);
 
         gl.glEnable(GL_CULL_FACE);
-        gl.glFrontFace(GL_CW);
+        gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
         //gl.glDepthFunc(GL_EQUAL);
 
@@ -268,347 +268,364 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         }
         float aspect = myCanvas.getWidth() / myCanvas.getHeight();
         Matrix3D pMat = perspective(60.0f, aspect, 0.001f, 10000.0f);
-        Matrix3D vMat = new Matrix3D();
-        vMat.translate(0,0,0);
+        //Matrix3D vMat = new Matrix3D();
+        //vMat.translate(0,0,0);
 
         MatrixStack mvStack = new MatrixStack(100);
 
         // push view matrix onto the stack
 
         // --------------------------- CAMERA
+
         mvStack.pushMatrix();
+        //mvStack.multMatrix(getUVNCamera());
+        mvStack.translate(0,0,zoom);
 
-
-        if (lookatcamera == 0) {
-            mvStack.pushMatrix();
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 1)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[9]) * mercuryDistance);
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[9]) * mercuryDistance );
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 2)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[8]) * venusDistance );
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[8]) * venusDistance );
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 3)
-        {
-            Vector3D c = new Vector3D(
-            (float) Math.sin(orbitSpeed[7]) * earthDistance ,
-            0,
-            (float) Math.cos(orbitSpeed[7]) * earthDistance );
-            xyz = c;
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 4)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[6]) * marsDistance );
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[6]) * marsDistance );
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 5)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[5]) * jupiterDistance + zoom);
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[5]) * jupiterDistance + zoom);
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 6)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[4]) * saturnDistance  + zoom);
-            xyz.setY(0+ zoom);
-            xyz.setZ((float) Math.cos(orbitSpeed[4]) * saturnDistance  + zoom);
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 7)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[3]) * uranusDistance + zoom);
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[3]) * uranusDistance  + zoom);
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 8)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[2]) * neptuneDistance + zoom);
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[2]) * neptuneDistance  + zoom);
-            mvStack.multMatrix(getUVNCamera());
-        }
-        else if (lookatcamera == 9)
-        {
-            xyz.setX((float) Math.sin(orbitSpeed[1]) * plutoDistance );
-            xyz.setY(0);
-            xyz.setZ((float) Math.cos(orbitSpeed[1]) * plutoDistance  );
-            mvStack.multMatrix(getUVNCamera());
-        }
-        //lightLoc.setX(-xyz.getX()); lightLoc.setY(-xyz.getY()); lightLoc.setZ(-xyz.getZ());
-        //currentLight.setPosition(lightLoc);
         installLights(mvStack.peek(), drawable);
-        //-----------------------   == universe
+
         mvStack.pushMatrix();
-        mvStack.scale(9999, 9999, 9999);
-        mvStack.pushMatrix();
+        mvStack.scale(10 , 20, 30);
+        mvStack.rotate(-degreePerSec(0.01f), 0, 1, 0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false, (mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glFrontFace(GL_CCW);
-        gl.glBindTexture(GL_TEXTURE_2D, skydomeTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping
-
-        // ----------------------   == sun
-        mvStack.pushMatrix();
-        mvStack.translate(0, 0, 0);
-        mvStack.pushMatrix();
-        mvStack.scale(sunSize, sunSize, sunSize);
-        mvStack.rotate(degreePerSec(0.005f), 0, 1, 0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false, mvStack.peek().getFloatValues(), 0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, sunTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-
-        //--------------------------------- solar flare \
-
-        if (System.currentTimeMillis() % 100 == 0 )
-        {
-            scalefactor = 0;
-            for (int i = 0; i < 10; i++) {
-                x[i] = (rand.nextFloat());
-                y[i] = (rand.nextFloat());
-                z[i] = (rand.nextFloat());
-                r[i] = (float) Math.sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
-                x[i] /= r[i];
-                y[i] /= r[i];
-                z[i] /= r[i];
-                if (rand.nextBoolean()) x[i] = -x[i];
-                if (rand.nextBoolean()) y[i] = -y[i];
-                if (rand.nextBoolean()) z[i] = -z[i];
-                s[i] = 0.01f + (rand.nextFloat() / 10);
-
-            }
-        }
-        scalefactor += 0.05;
-
-        for (int i = 0; i < 10; i++)
-        {
-
-            mvStack.pushMatrix();
-            mvStack.translate(x[i], y[i], z[i]);
-            //mvStack.rotate(20,1,1,1);
-            float ss = s[i] + (float) Math.sin(scalefactor) / 20;
-            mvStack.scale(ss, ss, ss);
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-            gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-
-            setupGl(gl);
-            gl.glBindTexture(GL_TEXTURE_2D, solarflareTexture);
-            //gl.glCullFace(GL_CCW);
-            // Enable blending
-            gl.glEnable(GL_BLEND);
-            //gl.glBlendEquation(GL_FUNC_ADD);
-            //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            //gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
-            gl.glBlendFunc(GL_ONE, GL_ONE);
-            gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
-            gl.glDisable(GL_BLEND);
-            mvStack.popMatrix();// poping solar flare
-        }
-
-        mvStack.popMatrix();// poping sun rotation
-        //mvStack.popMatrix();
-        //-----------------------   == Mercury
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[9]) * mercuryDistance, 0.0f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance);
-        mvStack.scale(mercurySize, mercurySize, mercurySize);
-        mvStack.pushMatrix();
-        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, mercuryTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix(); //poping Mercury
-        //-----------------------   == venus
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[8]) * venusDistance, 0.0f, (float) Math.cos(orbitSpeed[8]) * venusDistance);
-        mvStack.scale(venusSize, venusSize, venusSize);
-        mvStack.pushMatrix();
-        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, venusTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping venus
-        //-----------------------   == earth
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, (float) Math.cos(orbitSpeed[7]) * earthDistance);
-        mvStack.scale(earthSize, earthSize, earthSize);
-        mvStack.pushMatrix();
-        mvStack.rotate(degreePerSec(0.1f), 0.0f, 1.0f, 0.0f);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, earthTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        //-----------------------   == earth moon
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.cos(orbitSpeed[9]) * 2, 0f, (float) Math.sin(orbitSpeed[9]) * 2);
-        mvStack.scale(earthSize / 1.1f, earthSize / 1.1f, earthSize / 1.1f);
-        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
-
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
         setupGl(gl);
         gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         mvStack.popMatrix();
-        mvStack.popMatrix();// poping earth
-
-
-        //-----------------------   == mars
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[6]) * marsDistance, 0.0f, (float) Math.cos(orbitSpeed[6]) * marsDistance);
-        mvStack.scale(marsSize * 2, marsSize * 2, marsSize * 2);
-        mvStack.pushMatrix();
-        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, marsTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping mars
-
-
-        //-----------------------   == jupiter
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.0f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance);
-        mvStack.scale(jupiterSize, jupiterSize, jupiterSize);
-        mvStack.pushMatrix();
-        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, jupiterTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping jupiter
-        //-----------------------   == saturn
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.0f, (float) Math.cos(orbitSpeed[4]) * saturnDistance);
-        mvStack.scale(saturnSize, saturnSize, saturnSize);
-        mvStack.pushMatrix();
-        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, saturnTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        //-----------------------   == saturn ring
-
-        mvStack.pushMatrix();
-        mvStack.scale(saturnSize / 10, saturnSize / 10, saturnSize / 10);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(0);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
-        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(1);
-        gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, saturnRingPattern);
-        gl.glEnable(GL_CULL_FACE);
-        gl.glFrontFace(GL_CW);
-        gl.glEnable(GL_DEPTH_TEST);
-        gl.glEnable(GL_BLEND);
-        //gl.glBlendEquation(GL_FUNC_ADD);
-        //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        gl.glBlendFunc(GL_ONE, GL_ONE);
-        // gl.glBlendFunc(GL_ONE, GL_ONE);
-        gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
-        gl.glDisable(GL_BLEND);
-        mvStack.popMatrix();
 
         mvStack.popMatrix();
-        mvStack.popMatrix();// poping saturn
-        //-----------------------   == uranus
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.0f, (float) Math.cos(orbitSpeed[3]) * uranusDistance);
-        mvStack.scale(uranusSize, uranusSize, uranusSize);
-        mvStack.pushMatrix();
-        mvStack.rotate(-degreePerSec(0.05f), 0, 1, 0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, uranusTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping uranus
-        //-----------------------   == neptune
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[2]) * neptuneDistance, 0.0f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance);
-        mvStack.scale(neptuneSize, neptuneSize, neptuneSize);
-        mvStack.pushMatrix();
-        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, neptuneTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping neptune
-        //-----------------------   == pluto
-        mvStack.pushMatrix();
-        mvStack.translate((float) Math.sin(orbitSpeed[1]) * plutoDistance, 0.0f, (float) Math.cos(orbitSpeed[1]) * plutoDistance);
-        mvStack.scale(plutoSize, plutoSize, plutoSize);
-        mvStack.pushMatrix();
-        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
-        setupGl(gl);
-        gl.glBindTexture(GL_TEXTURE_2D, plutoTexture);
-        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();// poping pluto
+
+//        if (lookatcamera == 0) {
+//            mvStack.pushMatrix();
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 1)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[9]) * mercuryDistance);
+//            xyz.setY(0);
+//            xyz.setZ((float) Math.cos(orbitSpeed[9]) * mercuryDistance );
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 2)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[8]) * venusDistance );
+//            xyz.setY(0);
+//            xyz.setZ((float) Math.cos(orbitSpeed[8]) * venusDistance );
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 3)
+//        {
+//            Vector3D c = new Vector3D(
+//            (float) Math.sin(orbitSpeed[7]) * earthDistance ,
+//            0,
+//            (float) Math.cos(orbitSpeed[7]) * earthDistance );
+//            xyz = c;
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 4)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[6]) * marsDistance );
+//            xyz.setY(0);
+//            xyz.setZ((float) Math.cos(orbitSpeed[6]) * marsDistance );
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 5)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[5]) * jupiterDistance + zoom);
+//            xyz.setY(0);
+//            xyz.setZ((float) Math.cos(orbitSpeed[5]) * jupiterDistance + zoom);
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 6)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[4]) * saturnDistance  + zoom);
+//            xyz.setY(0+ zoom);
+//            xyz.setZ((float) Math.cos(orbitSpeed[4]) * saturnDistance  + zoom);
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 7)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[3]) * uranusDistance + zoom);
+//            xyz.setY(0);
+//            xyz.setZ((float) Math.cos(orbitSpeed[3]) * uranusDistance  + zoom);
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 8)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[2]) * neptuneDistance + zoom);
+//            xyz.setY(0);
+//            xyz.setZ((float) Math.cos(orbitSpeed[2]) * neptuneDistance  + zoom);
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        else if (lookatcamera == 9)
+//        {
+//            xyz.setX((float) Math.sin(orbitSpeed[1]) * plutoDistance );
+//            xyz.setY(0);
+//            xyz.setZ((float) Math.cos(orbitSpeed[1]) * plutoDistance  );
+//            mvStack.multMatrix(getUVNCamera());
+//        }
+//        //lightLoc.setX(-xyz.getX()); lightLoc.setY(-xyz.getY()); lightLoc.setZ(-xyz.getZ());
+//        //currentLight.setPosition(lightLoc);
+//        installLights(mvStack.peek(), drawable);
+//        //-----------------------   == universe
+//        mvStack.pushMatrix();
+//        mvStack.scale(9999, 9999, 9999);
+//        mvStack.pushMatrix();
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false, (mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glFrontFace(GL_CCW);
+//        gl.glBindTexture(GL_TEXTURE_2D, skydomeTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping
+//
+//        // ----------------------   == sun
+//        mvStack.pushMatrix();
+//        mvStack.translate(0, 0, 0);
+//        mvStack.pushMatrix();
+//        mvStack.scale(sunSize, sunSize, sunSize);
+//        mvStack.rotate(degreePerSec(0.005f), 0, 1, 0);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false, mvStack.peek().getFloatValues(), 0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, sunTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//
+//        //--------------------------------- solar flare \
+//
+//        if (System.currentTimeMillis() % 100 == 0 )
+//        {
+//            scalefactor = 0;
+//            for (int i = 0; i < 10; i++) {
+//                x[i] = (rand.nextFloat());
+//                y[i] = (rand.nextFloat());
+//                z[i] = (rand.nextFloat());
+//                r[i] = (float) Math.sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
+//                x[i] /= r[i];
+//                y[i] /= r[i];
+//                z[i] /= r[i];
+//                if (rand.nextBoolean()) x[i] = -x[i];
+//                if (rand.nextBoolean()) y[i] = -y[i];
+//                if (rand.nextBoolean()) z[i] = -z[i];
+//                s[i] = 0.01f + (rand.nextFloat() / 10);
+//
+//            }
+//        }
+//        scalefactor += 0.05;
+//
+//        for (int i = 0; i < 10; i++)
+//        {
+//
+//            mvStack.pushMatrix();
+//            mvStack.translate(x[i], y[i], z[i]);
+//            //mvStack.rotate(20,1,1,1);
+//            float ss = s[i] + (float) Math.sin(scalefactor) / 20;
+//            mvStack.scale(ss, ss, ss);
+//            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//            gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//
+//            setupGl(gl);
+//            gl.glBindTexture(GL_TEXTURE_2D, solarflareTexture);
+//            //gl.glCullFace(GL_CCW);
+//            // Enable blending
+//            gl.glEnable(GL_BLEND);
+//            //gl.glBlendEquation(GL_FUNC_ADD);
+//            //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//            //gl.glBlendFunc(GL_ONE, GL_SRC_COLOR);
+//            gl.glBlendFunc(GL_ONE, GL_ONE);
+//            gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
+//            gl.glDisable(GL_BLEND);
+//            mvStack.popMatrix();// poping solar flare
+//        }
+//
+//        mvStack.popMatrix();// poping sun rotation
+//        //mvStack.popMatrix();
+//        //-----------------------   == Mercury
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[9]) * mercuryDistance, 0.0f, (float) Math.cos(orbitSpeed[9]) * mercuryDistance);
+//        mvStack.scale(mercurySize, mercurySize, mercurySize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, mercuryTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix(); //poping Mercury
+//        //-----------------------   == venus
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[8]) * venusDistance, 0.0f, (float) Math.cos(orbitSpeed[8]) * venusDistance);
+//        mvStack.scale(venusSize, venusSize, venusSize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, venusTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping venus
+//        //-----------------------   == earth
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[7]) * earthDistance, 0.0f, (float) Math.cos(orbitSpeed[7]) * earthDistance);
+//        mvStack.scale(earthSize, earthSize, earthSize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(degreePerSec(0.1f), 0.0f, 1.0f, 0.0f);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, earthTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        //-----------------------   == earth moon
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.cos(orbitSpeed[9]) * 2, 0f, (float) Math.sin(orbitSpeed[9]) * 2);
+//        mvStack.scale(earthSize / 1.1f, earthSize / 1.1f, earthSize / 1.1f);
+//        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
+//
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping earth
+//
+//
+//        //-----------------------   == mars
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[6]) * marsDistance, 0.0f, (float) Math.cos(orbitSpeed[6]) * marsDistance);
+//        mvStack.scale(marsSize * 2, marsSize * 2, marsSize * 2);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, marsTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping mars
+//
+//
+//        //-----------------------   == jupiter
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[5]) * jupiterDistance, 0.0f, (float) Math.cos(orbitSpeed[5]) * jupiterDistance);
+//        mvStack.scale(jupiterSize, jupiterSize, jupiterSize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, jupiterTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping jupiter
+//        //-----------------------   == saturn
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[4]) * saturnDistance, 0.0f, (float) Math.cos(orbitSpeed[4]) * saturnDistance);
+//        mvStack.scale(saturnSize, saturnSize, saturnSize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(degreePerSec(0.01f), 0.0f, 1.0f, 0.0f);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, saturnTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        //-----------------------   == saturn ring
+//
+//        mvStack.pushMatrix();
+//        mvStack.scale(saturnSize / 10, saturnSize / 10, saturnSize / 10);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
+//        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+//        gl.glEnableVertexAttribArray(0);
+//        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
+//        gl.glVertexAttribPointer(1, 2, GL.GL_FLOAT, false, 0, 0);
+//        gl.glEnableVertexAttribArray(1);
+//        gl.glActiveTexture(GL_TEXTURE0);
+//        gl.glBindTexture(GL_TEXTURE_2D, saturnRingPattern);
+//        gl.glEnable(GL_CULL_FACE);
+//        gl.glFrontFace(GL_CW);
+//        gl.glEnable(GL_DEPTH_TEST);
+//        gl.glEnable(GL_BLEND);
+//        //gl.glBlendEquation(GL_FUNC_ADD);
+//        //gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//        gl.glBlendFunc(GL_ONE, GL_ONE);
+//        // gl.glBlendFunc(GL_ONE, GL_ONE);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, ring.getIndices().length);
+//        gl.glDisable(GL_BLEND);
+//        mvStack.popMatrix();
+//
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping saturn
+//        //-----------------------   == uranus
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[3]) * uranusDistance, 0.0f, (float) Math.cos(orbitSpeed[3]) * uranusDistance);
+//        mvStack.scale(uranusSize, uranusSize, uranusSize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(-degreePerSec(0.05f), 0, 1, 0);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, uranusTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping uranus
+//        //-----------------------   == neptune
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[2]) * neptuneDistance, 0.0f, (float) Math.cos(orbitSpeed[2]) * neptuneDistance);
+//        mvStack.scale(neptuneSize, neptuneSize, neptuneSize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, neptuneTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping neptune
+//        //-----------------------   == pluto
+//        mvStack.pushMatrix();
+//        mvStack.translate((float) Math.sin(orbitSpeed[1]) * plutoDistance, 0.0f, (float) Math.cos(orbitSpeed[1]) * plutoDistance);
+//        mvStack.scale(plutoSize, plutoSize, plutoSize);
+//        mvStack.pushMatrix();
+//        mvStack.rotate(-degreePerSec(0.005f), 0, 1, 0);
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(n_location, 1, false,(mv_matrix.inverse()).transpose().getFloatValues(),0);
+//        setupGl(gl);
+//        gl.glBindTexture(GL_TEXTURE_2D, plutoTexture);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+//        mvStack.popMatrix();
+//        mvStack.popMatrix();// poping pluto
 
 
-        if (axis) {
-            gl.glUseProgram(rendering_program_axis);
-            mv_loc = gl.glGetUniformLocation(rendering_program_axis, "mv_matrix");
-            proj_loc = gl.glGetUniformLocation(rendering_program_axis, "proj_matrix");
-            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-            gl.glDrawArrays(GL_LINES, 0, 6);
-        }
-        if (lookatcamera == 0) mvStack.popMatrix();// poping the camera!!!
-        mvStack.popMatrix();
+//        if (axis) {
+//            gl.glUseProgram(rendering_program_axis);
+//            mv_loc = gl.glGetUniformLocation(rendering_program_axis, "mv_matrix");
+//            proj_loc = gl.glGetUniformLocation(rendering_program_axis, "proj_matrix");
+//            gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+//            gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+//            gl.glDrawArrays(GL_LINES, 0, 6);
+//        }
+//        if (lookatcamera == 0) mvStack.popMatrix();// poping the camera!!!
+//        mvStack.popMatrix();
     }
 
 
@@ -737,16 +754,13 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
 
-    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height)
-    {
-    }
+    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {}
 
     private float degreePerSec(float rev) {
         return (float) (System.currentTimeMillis() % 360000) / (1 / rev);
     }
 
-    public void dispose(GLAutoDrawable drawable) {
-    }
+    public void dispose(GLAutoDrawable drawable) {}
 
     public void actionPerformed(ActionEvent e)
     {
@@ -770,7 +784,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
             t.scale(-0.5f);
             xyz = xyz.add(t);
-             if  (zoom > 1 )zoom -= 1f;
+             //if  (zoom > 1 )
+                 zoom -= 1f;
             System.out.println("wheels down size is " + xyz.getZ());
         }
     }
@@ -961,7 +976,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
             t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
             t.scale(0.5f);
             xyz = xyz.add(t);
-            if  (zoom > 1 )zoom -= 1f;
+            //if  (zoom > 1 )
+                zoom -= 1f;
         }
     }
 
