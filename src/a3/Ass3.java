@@ -12,21 +12,18 @@ import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import graphicslib3D.*;
 import graphicslib3D.light.PositionalLight;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.nio.FloatBuffer;
 import java.util.Random;
-
 import static com.jogamp.opengl.GL.*;
 import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
 import static com.jogamp.opengl.GL.GL_TRIANGLES;
 import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 
-
-import shapes.*;
-
+import models.ImportedModel;
+import utilities.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -37,24 +34,14 @@ import static com.jogamp.opengl.GL.GL_CCW;
 
 public class Ass3 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener, com.jogamp.newt.event.KeyListener {
 
+    private boolean animated = true;
 
-
-    public static float zoom = 0.0f;
-    public static float pan = 0.0f;
-    public static float pitch = 0.0f;
-    public static float strafe = 0.0f;
     public static boolean axis = false;
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
 
     private int vao[] = new int[1];
     private int vbo[] = new int[50];
-    private float x[] = new float[100];
-    private float y[] = new float[100];
-    private float z[] = new float[100];
-    private float r[] = new float[100];
-    private float s[] = new float[100];
-    private float scalefactor = 0;
 
     private int rendering_program;
     private int rendering_program_axis;
@@ -62,59 +49,67 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     private int rendering_program_blinnphong_lighting;
 
     private GLSLUtils util = new GLSLUtils();
-    private float upDown = 0.0f;
-    private boolean animated = true;
+
     private Animator animator;
 
     private Random rand;
-
+    //------------------------------------------------------------------------------------------------------
+    //OBJECTS
     private shapes.Ground ground = new shapes.Ground(1000);
-    private shapes.Sphere mySphere = new Sphere(48);
+    private shapes.Sphere mySphere = new shapes.Sphere(48);
     private shapes.Astroid rock = new shapes.Astroid(100);
-    private Ring ring = new Ring(20, 40, 48);
-    private TextureReader tr = new TextureReader();
-
-    private  int moonTexture;
-    private  int grassTexture;
-    private int[] samplers = new int[2];
+    private shapes.Ring ring = new shapes.Ring(20, 40, 48);
+    private ImportedModel grassModel,plantModel;
+    //------------------------------------------------------------------------------------------------------
+    // MATRICIES
+    private Matrix3D m_matrix = new Matrix3D();
+    private Matrix3D v_matrix = new Matrix3D();
+    private Matrix3D mv_matrix = new Matrix3D();
+    private Matrix3D proj_matrix = new Matrix3D();
+    //------------------------------------------------------------------------------------------------------
+    //CAMERA
+    public static float zoom = 0.0f;
+    public static float pan = 0.0f;
+    public static float pitch = 0.0f;
+    public static float strafe = 0.0f;
+    private float upDown = 0.0f;
     private Vector3D u = new Vector3D(1, 0, 0);
     private Vector3D v = new Vector3D(0, 1, 0);
     private Vector3D n = new Vector3D(0, 0, 1 );
     private Vector3D xyz = new Vector3D(0,0,0);
     private int lookatcamera = 0;
+    //------------------------------------------------------------------------------------------------------
+    //TEXTURE
+    private TextureReader tr = new TextureReader();
+    private  int moonTexture,grassTexture,treedry;
+    //------------------------------------------------------------------------------------------------------
 
-    private Matrix3D m_matrix = new Matrix3D();
-    private Matrix3D v_matrix = new Matrix3D();
-    private Matrix3D mv_matrix = new Matrix3D();
-    private Matrix3D proj_matrix = new Matrix3D();
-
-    graphicslib3D.Material thisMaterial = Material.SILVER;
-
+    // MATERIALS
     private float[] rockambient = {0.0f,0.0f,0.0f,1.0f};
     private float[] rockdiffuse = {0.1f,0.1f,0.1f,1.0f};
     private float[] rockspecular =  {0.1f,0.1f,0.1f,1.0f};
     private float[] rockemission = {0.1f,0.1f,0.1f,1.0f};
     private float rockshininess = 0.0f;
     graphicslib3D.Material rockMaterial = new Material("rock",rockambient,rockdiffuse,rockspecular,rockemission,rockshininess);
-
     private float[] grassambient = {0.0f,0.0f,0.0f,1.0f};
     private float[] grassdiffuse = {0.1f,0.35f,0.1f,1.0f};
     private float[] grassspecular =  {0.45f,0.55f,0.45f,1.0f};
     private float[] grassemission = {0.1f,0.1f,0.1f,1.0f};
     private float grassshininess = 10f;
     graphicslib3D.Material grassMaterial = new Material("grass",grassambient,grassdiffuse,grassspecular,grassemission,grassshininess);
+    //------------------------------------------------------------------------------------------------------
 
+    //LIGHT
     private PositionalLight currentLight = new PositionalLight();
     private Point3D lightLoc = new Point3D( 10f,1000f,10f);
     float [] globalAmbient = new float[] { 0.1f, 0.1f, 0.1f, 1.0f };
-
+    //------------------------------------------------------------------------------------------------------
 
     public Ass3()
     {
         setTitle("Assignment 3 CSC155");
         setSize(dimention);
         this.addMouseWheelListener(this);
-
         myCanvas = new GLCanvas();
         myCanvas.addGLEventListener(this);
         rand = new Random();
@@ -133,14 +128,16 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
     public void init(GLAutoDrawable drawable)
     {
-        //this.getRootPane().requestFocus();
         GL4 gl = (GL4) drawable.getGL();
-        //rendering_program = createShaderPrograms(drawable,"a2shaders/vert.glsl","a2shaders/frag.glsl");
         Shader sh = new Shader();
+
+
         rendering_program_axis = sh.createShaderPrograms(drawable,"shaders/axisvert.glsl","shaders/axisfrag.glsl");
         rendering_program_no_lighting = sh.createShaderPrograms(drawable,"shaders/vert.glsl","shaders/frag.glsl");
         rendering_program_blinnphong_lighting = sh.createShaderPrograms(drawable,"shaders/blinnphongvert.glsl","shaders/blinnphongfrag.glsl");
 
+        grassModel = new ImportedModel("Grass_02.obj");
+        plantModel = new ImportedModel("tree.obj");
 
         setupVertices(gl);
         xyz.setZ(120);
@@ -151,11 +148,10 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         v = v.mult(r);
 
         // could be handleed directly with layout in frag shader
-        int tx_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "s");
-        gl.glGenSamplers(1, samplers, 0);
-        gl.glBindSampler(0, tx_loc);
+
         grassTexture    = tr.loadTexture(drawable, "textures/grass.jpg");
         moonTexture  = tr.loadTexture(drawable, "textures/moonmap1k.jpg");
+        treedry = tr.loadTexture(drawable, "textures/tree_dry.jpg");
         animator = new Animator(myCanvas);
         Thread thread =
                 new Thread(new Runnable(){ public void run() { animator.start();}});
@@ -216,15 +212,50 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.multMatrix(getUVNCamera());
 
         currentLight.setPosition(lightLoc);
-        //mvStack.rotate(-degreePerSec(0.01f),0,1,0);
 
-        //ROCK
-        installLights(mvStack.peek(),rockMaterial, drawable);
+
+        //tree
+        installLights(mvStack.peek(),Material.SILVER, drawable);
         mvStack.pushMatrix();
        // mvStack.translate(-500,0,500);
-        mvStack.scale(50, 50, 50);
+        mvStack.scale(200, 200, 200);
         mvStack.pushMatrix();
-        mvStack.rotate(115, 1, 1,1);
+        //mvStack.rotate(115, 1, 1,1);
+        //mvStack.rotate(-degreePerSec(0.01f),0,1,0);
+        gl.glBindVertexArray(vao[0]);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[30]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[31]);
+        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(2);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[32]);
+        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glBindTexture(GL_TEXTURE_2D, treedry);
+        gl.glGenerateMipmap(GL_TEXTURE_2D);
+        gl.glFrontFace(GL_CCW);
+        gl.glDrawArrays(GL_TRIANGLES, 0, plantModel.getIndices().length);
+        gl.glFrontFace(GL_CW);
+        gl.glDrawArrays(GL_TRIANGLES, 0, plantModel.getIndices().length);
+        mvStack.popMatrix();
+        mvStack.popMatrix();
+//ROCK
+        installLights(mvStack.peek(),Material.SILVER, drawable);
+        mvStack.pushMatrix();
+        mvStack.translate(-50,0,50);
+        mvStack.scale(20, 20, 20);
+        mvStack.pushMatrix();
+        //mvStack.rotate(115, 1, 1,1);
+        //mvStack.rotate(-degreePerSec(0.01f),0,1,0);
         gl.glBindVertexArray(vao[0]);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
@@ -241,20 +272,19 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
-
         gl.glEnable(GL_CULL_FACE);
-        gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
-        //gl.glDepthFunc(GL_EQUAL);
         gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
         gl.glGenerateMipmap(GL_TEXTURE_2D);
+        gl.glFrontFace(GL_CCW);
+        gl.glDrawArrays(GL_TRIANGLES, 0, plantModel.getIndices().length);
+        gl.glFrontFace(GL_CW);
         gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
         mvStack.popMatrix();
         mvStack.popMatrix();
-
         //GRASS
-        for(int i = -500;i<500;i+=100) {
-            for (int j = -500; j < 500; j += 100) {
+        for(int i = -200;i<200;i+=100) {
+            for (int j = -200; j < 200; j += 100) {
                 installLights(mvStack.peek(), grassMaterial, drawable);
                 mvStack.pushMatrix();
                 mvStack.translate(i, 0, j);
@@ -397,7 +427,38 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
         }
+        { // imported model
+            Vertex3D[] vertices = plantModel.getVertices();
+            int[] indices = plantModel.getIndices();
+            float[] fvalues = new float[indices.length * 3];
+            float[] tvalues = new float[indices.length * 2];
+            float[] nvalues = new float[indices.length * 3];
+            for (int i = 0; i < indices.length; i++)
+            {
+                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+                nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
+                nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
+                nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+            }
 
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[30]);
+            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[31]);
+            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[32]);
+            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+
+
+        }
     }
 
 
@@ -460,6 +521,8 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
     public void dispose(GLAutoDrawable drawable) {}
 
+
+    // ---------------------------------- CONTROLS --------------------------------------
     public void actionPerformed(ActionEvent e)
     {
 //        if ("up".equals(e.getActionCommand()) && upDown < 1) {
@@ -476,7 +539,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             t.scale(0.5f);
             xyz = xyz.add(t);
             zoom += 1f;
-            System.out.println("wheels down size is " + xyz.getZ());
+           // System.out.println("wheels down size is " + xyz.getZ());
         } else {
             Vector3D t = new Vector3D();
             t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
@@ -484,7 +547,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             xyz = xyz.add(t);
             //if  (zoom > 1 )
             zoom -= 1f;
-            System.out.println("wheels down size is " + xyz.getZ());
+           // System.out.println("wheels down size is " + xyz.getZ());
         }
     }
 
