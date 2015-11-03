@@ -65,43 +65,40 @@ public class Astroid
             vertices[i*(prec+1)+j].setT((float)i/(float)(prec));
 
             // calculate normal vector
-            vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
+           vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
         }	}
 
         //vertex manipulation
-        for (int k = 0;k<1000;k++) {
-            float d = -0.01f;
+        int radius = 5;
+        int bumps = 1000;
+        float depth = -0.01f;
+        for (int k = 0;k<bumps;k++) {
+            float d = depth;
             if (random.nextBoolean()) d *= -1;
-            carve(randInt(3, 97), randInt(3, 97), 3, d);
+            carve(randInt(radius, prec-radius), randInt(radius, prec-radius), radius, d);
         }
         //calculate normlas
-        for (int i=0; i<prec; i++) {
-            for (int j=0; j<prec; j++) {
+        for (int i=0; i<=prec; i++) {
+            for (int j=0; j<=prec; j++) {
 
-                Vertex3D from = vertices[i*(prec+1)+j+1];
-
-                Vertex3D to1 = vertices[i*(prec+1)+j];
-
-                Vertex3D to2 = vertices[(i+1)*(prec+1)+j];
-
-
+                Vertex3D from = vertices[(i%prec)*(prec+1)+(j%prec)+1];
+                Vertex3D to1 = vertices[(i%prec)*(prec+1)+(j%prec)];
+                Vertex3D to2 = vertices[((i%prec)+1)*(prec+1)+(j%prec)];
                 Vector3D U = new Vector3D(from.minus(to1));
                 Vector3D V = new Vector3D(from.minus(to2));
-
                 Vector3D normal = V.cross(U);
-
-                vertices[i*(prec+1)+j].setNormal(normal);
+                vertices[(i%prec)*(prec+1)+(j%prec)].setNormal(normal);
             }}
 
         // calculate triangle indices
-        for(int i=0; i<prec; i++)
-        {	for(int j=0; j<prec; j++)
-        {	indices[6*(i*(prec+1)+j)+0] = i*(prec+1)+j;
-            indices[6*(i*(prec+1)+j)+1] = i*(prec+1)+j+1;
-            indices[6*(i*(prec+1)+j)+2] = (i+1)*(prec+1)+j;
-            indices[6*(i*(prec+1)+j)+3] = i*(prec+1)+j+1;
-            indices[6*(i*(prec+1)+j)+4] = (i+1)*(prec+1)+j+1;
-            indices[6*(i*(prec+1)+j)+5] = (i+1)*(prec+1)+j;
+        for(int i=0; i<=prec; i++)
+        {	for(int j=0; j<=prec; j++)
+        {	indices[6*((i%prec)*(prec+1)+(j%prec))+0] = (i%prec)*(prec+1)+(j%prec);
+            indices[6*((i%prec)*(prec+1)+(j%prec))+1] = (i%prec)*(prec+1)+(j%prec)+1;
+            indices[6*((i%prec)*(prec+1)+(j%prec))+2] = ((i%prec)+1)*(prec+1)+(j%prec);
+            indices[6*((i%prec)*(prec+1)+(j%prec))+3] = (i%prec)*(prec+1)+(j%prec)+1;
+            indices[6*((i%prec)*(prec+1)+(j%prec))+4] = ((i%prec)+1)*(prec+1)+(j%prec)+1;
+            indices[6*((i%prec)*(prec+1)+(j%prec))+5] = ((i%prec)+1)*(prec+1)+(j%prec);
         }	}	}
 
     public int[] getIndices()
