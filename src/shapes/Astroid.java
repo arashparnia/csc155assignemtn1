@@ -1,15 +1,16 @@
-package a2;
+package shapes;
 
 /**
  * Created by arash on 10/23/2015.
  */
 
-        import graphicslib3D.*;
+import graphicslib3D.Point3D;
+import graphicslib3D.Vector3D;
+import graphicslib3D.Vertex3D;
 
-        import java.util.Random;
+import java.util.Random;
 
-        import static java.lang.Math.*;
-        import java.util.Random;
+import static java.lang.Math.*;
 
 public class Astroid
 {
@@ -62,15 +63,22 @@ public class Astroid
             vertices[i*(prec+1)+j].setT((float)i/(float)(prec));
 
             // calculate normal vector
-            vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
+            //vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
         }	}
 
         //vertex manipulation
         for (int k = 0;k<500;k++) {
-            float d = 0.01f;
+            float d = -0.01f;
             if (random.nextBoolean()) d *= -1;
             carve(randInt(3, 97), randInt(3, 97), 3, d);
         }
+        //calculate normlas
+        for (int i=0; i<=prec; i++) {
+            for (int j=0; j<=prec; j++) {
+
+                vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
+            }}
+
         // calculate triangle indices
         for(int i=0; i<prec; i++)
         {	for(int j=0; j<prec; j++)

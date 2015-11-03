@@ -1,14 +1,16 @@
-package a2;
+package shapes;
 
 /**
  * Created by arash on 10/15/2015.
  */
 
-        import graphicslib3D.*;
+import graphicslib3D.Point3D;
+import graphicslib3D.Vector3D;
+import graphicslib3D.Vertex3D;
 
-        import java.util.Random;
+import java.util.Random;
 
-        import static java.lang.Math.*;
+import static java.lang.Math.*;
 
 public class Ring{
     private int numVertices, numIndices, prec=8,inner = 3,outter = 5;

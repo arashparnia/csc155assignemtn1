@@ -102,8 +102,8 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     private Random rand;
 
-    private Astroid mySphere = new Astroid(100);
-    private Ring ring = new Ring(20, 40, 48);
+    private shapes.Astroid mySphere = new shapes.Astroid(100);
+    private shapes.Ring ring = new shapes.Ring(20, 40, 48);
     private TextureReader tr = new TextureReader();
     private int sunTexture;
     private int solarflareTexture;
@@ -135,7 +135,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 
     graphicslib3D.Material thisMaterial = Material.SILVER;
     private PositionalLight currentLight = new PositionalLight();
-    private Point3D lightLoc = new Point3D(10f,100f,-200f);
+    private Point3D lightLoc = new Point3D( 0f,100f,500f);
     float [] globalAmbient = new float[] { 0.1f, 0.1f, 0.1f, 1.0f };
 
 
@@ -278,13 +278,15 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         // --------------------------- CAMERA
 
         mvStack.pushMatrix();
-        //mvStack.multMatrix(getUVNCamera());
-        mvStack.translate(0,0,zoom);
+        mvStack.multMatrix(getUVNCamera());
+        //mvStack.translate(0,0,zoom);
 
+        currentLight.setPosition(lightLoc);
         installLights(mvStack.peek(), drawable);
 
         mvStack.pushMatrix();
-        mvStack.scale(10 , 20, 30);
+        mvStack.translate(10,0,0);
+        mvStack.scale(10 , 10, 10);
         mvStack.rotate(-degreePerSec(0.01f), 0, 1, 0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
@@ -293,6 +295,19 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
         gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
         mvStack.popMatrix();
+
+        mvStack.pushMatrix();
+        mvStack.translate(-10,0,0);
+        mvStack.scale(10 , 10, 10);
+        mvStack.rotate(-degreePerSec(0.01f), 0, 1, 0);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
+        setupGl(gl);
+        gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
+        gl.glDrawArrays(GL_TRIANGLES, 0, mySphere.getIndices().length);
+        mvStack.popMatrix();
+
 
         mvStack.popMatrix();
 
@@ -366,7 +381,7 @@ public class Ass2 extends JFrame implements GLEventListener, ActionListener, Mou
 //            mvStack.multMatrix(getUVNCamera());
 //        }
 //        //lightLoc.setX(-xyz.getX()); lightLoc.setY(-xyz.getY()); lightLoc.setZ(-xyz.getZ());
-//        //currentLight.setPosition(lightLoc);
+//
 //        installLights(mvStack.peek(), drawable);
 //        //-----------------------   == universe
 //        mvStack.pushMatrix();
