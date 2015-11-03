@@ -4,11 +4,13 @@ package shapes;
  * Created by arash on 10/23/2015.
  */
 
+import com.jogamp.graph.geom.Triangle;
 import graphicslib3D.Point3D;
 import graphicslib3D.Vector3D;
 import graphicslib3D.Vertex3D;
 
 import java.util.Random;
+import java.util.Set;
 
 import static java.lang.Math.*;
 
@@ -63,20 +65,32 @@ public class Astroid
             vertices[i*(prec+1)+j].setT((float)i/(float)(prec));
 
             // calculate normal vector
-            //vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
+            vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
         }	}
 
         //vertex manipulation
-        for (int k = 0;k<500;k++) {
+        for (int k = 0;k<1000;k++) {
             float d = -0.01f;
             if (random.nextBoolean()) d *= -1;
             carve(randInt(3, 97), randInt(3, 97), 3, d);
         }
         //calculate normlas
-        for (int i=0; i<=prec; i++) {
-            for (int j=0; j<=prec; j++) {
+        for (int i=0; i<prec; i++) {
+            for (int j=0; j<prec; j++) {
 
-                vertices[i*(prec+1)+j].setNormal(new Vector3D(vertices[i*(prec+1)+j].getLocation()));
+                Vertex3D from = vertices[i*(prec+1)+j+1];
+
+                Vertex3D to1 = vertices[i*(prec+1)+j];
+
+                Vertex3D to2 = vertices[(i+1)*(prec+1)+j];
+
+
+                Vector3D U = new Vector3D(from.minus(to1));
+                Vector3D V = new Vector3D(from.minus(to2));
+
+                Vector3D normal = V.cross(U);
+
+                vertices[i*(prec+1)+j].setNormal(normal);
             }}
 
         // calculate triangle indices
