@@ -51,8 +51,9 @@ public class Ground
             float y = (float) tan(b);
             float x = i;
             float z = j;
+                if (y < -40) y = 50;
                 if (y>100) y=50;
-                else if (y <40) y =0;
+                if (y <40) y =0;
             vertices[i*(prec+1)+j].setLocation(new Point3D(x,y,z));
 
             // calculate tangent vector

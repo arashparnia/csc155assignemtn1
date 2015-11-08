@@ -5,16 +5,21 @@ package a3;
  */
 // todo : create seperate shader for sun
 
+import com.jogamp.newt.event.*;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.test.junit.graph.demos.ui.UIShape;
 import graphicslib3D.*;
 import graphicslib3D.light.PositionalLight;
 import javax.swing.*;
+import javax.swing.event.MouseInputListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.nio.FloatBuffer;
 import java.util.Random;
 import static com.jogamp.opengl.GL.*;
@@ -32,16 +37,16 @@ import java.awt.event.WindowEvent;
 import static com.jogamp.opengl.GL.GL_CCW;
 
 
-public class Ass3 extends JFrame implements GLEventListener, ActionListener, MouseWheelListener, KeyListener, com.jogamp.newt.event.KeyListener {
+public class Ass3 extends JFrame implements GLEventListener, ActionListener, MouseListener,MouseWheelListener,MouseMotionListener, KeyListener{
 
     private boolean animated = true;
-
+    private Point mousePoint= new Point();
     public static boolean axis = false;
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
 
     private int vao[] = new int[1];
-    private int vbo[] = new int[50];
+    private int vbo[] = new int[100];
 
     private int rendering_program;
     private int rendering_program_axis;
@@ -81,7 +86,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     //------------------------------------------------------------------------------------------------------
     //TEXTURE
     private TextureReader tr = new TextureReader();
-    private  int moonTexture,grassTexture,treedry;
+    private  int sunTexture,moonTexture,grassTexture,treedry;
     //------------------------------------------------------------------------------------------------------
 
     // MATERIALS
@@ -97,11 +102,17 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     private float[] grassemission = {0.1f,0.1f,0.1f,1.0f};
     private float grassshininess = 10f;
     graphicslib3D.Material grassMaterial = new Material("grass",grassambient,grassdiffuse,grassspecular,grassemission,grassshininess);
+    private float[] sunambient = {1.0f,1.0f,1.0f,1.0f};
+    private float[] sundiffuse = {1.0f,0.5f,0.0f,1.0f};
+    private float[] sunspecular =  {0.0f,0.0f,0.0f,1.0f};
+    private float[] sunemission = {1.0f,1.0f,1.0f,1.0f};
+    private float sunshininess = 10f;
+    graphicslib3D.Material sunMaterial = new Material("sun",sunambient,sundiffuse,sunspecular,sunemission,sunshininess);
     //------------------------------------------------------------------------------------------------------
 
     //LIGHT
     private PositionalLight currentLight = new PositionalLight();
-    private Point3D lightLoc = new Point3D( 10f,1000f,10f);
+    private Point3D lightLoc = new Point3D( 10f,20f,10f);
     float [] globalAmbient = new float[] { 0.1f, 0.1f, 0.1f, 1.0f };
     //------------------------------------------------------------------------------------------------------
 
@@ -109,12 +120,17 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     {
         setTitle("Assignment 3 CSC155");
         setSize(dimention);
-        this.addMouseWheelListener(this);
+
         myCanvas = new GLCanvas();
         myCanvas.addGLEventListener(this);
         rand = new Random();
         add(myCanvas);
         this.addKeyListener(this);
+        this.addMouseWheelListener(this);
+        myCanvas.addMouseMotionListener(this);
+        myCanvas.addMouseListener(this);
+        myCanvas.requestFocus();
+        //this.addMouseMotionListener(this);
         keyMaping();
         setVisible(true);
         this.addWindowListener(new WindowAdapter() {
@@ -150,6 +166,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         // could be handleed directly with layout in frag shader
 
         grassTexture    = tr.loadTexture(drawable, "textures/grass.jpg");
+        sunTexture  = tr.loadTexture(drawable, "textures/sunmap.jpg");
         moonTexture  = tr.loadTexture(drawable, "textures/moonmap1k.jpg");
         treedry = tr.loadTexture(drawable, "textures/tree_dry.jpg");
         animator = new Animator(myCanvas);
@@ -213,10 +230,10 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
         //Matrix3D lookat =  lookAt(new Point3D(0,orbitSpeed[10],0),new Point3D(0,0,0),new Vector3D(0,1,0));
         //lightLoc.mult(lookat);
-        int min = -50; int max = 50;
-        lightLoc.setX(lightLoc.getX()+rand.nextInt((max - min) + 1) + min);
-        lightLoc.setY(lightLoc.getY()+rand.nextInt((max - min) + 1) + min);
-        lightLoc.setZ(lightLoc.getZ()+rand.nextInt((max - min) + 1) + min);
+//        int min = -50; int max = 50;
+//        lightLoc.setX(lightLoc.getX()+rand.nextInt((max - min) + 1) + min);
+//        lightLoc.setY(lightLoc.getY()+rand.nextInt((max - min) + 1) + min);
+//        lightLoc.setZ(lightLoc.getZ()+rand.nextInt((max - min) + 1) + min);
         currentLight.setPosition(lightLoc);
 
 
@@ -290,6 +307,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.pushMatrix();
         mvStack.translate(-50,0,50);
         mvStack.scale(20, 20, 20);
+        //mvStack.scale(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
         mvStack.pushMatrix();
         //mvStack.rotate(115, 1, 1,1);
         mvStack.rotate(-degreePerSec(0.01f),0,1,0);
@@ -314,7 +332,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
         gl.glGenerateMipmap(GL_TEXTURE_2D);
         gl.glFrontFace(GL_CCW);
-        gl.glDrawArrays(GL_TRIANGLES, 0, plantModel.getIndices().length);
+        gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
         gl.glFrontFace(GL_CW);
         gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
         mvStack.popMatrix();
@@ -357,6 +375,42 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
                 mvStack.popMatrix();
             }
         }
+        //light
+        installLights(mvStack.peek(),sunMaterial, drawable);
+        mvStack.pushMatrix();
+        mvStack.translate(lightLoc.getX(),lightLoc.getY(),lightLoc.getZ());
+        mvStack.scale(0.1, 0.1, 0.1);
+        mvStack.pushMatrix();
+        mvStack.rotate(-degreePerSec(1f),0,1,0);
+        gl.glBindVertexArray(vao[0]);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[50]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[51]);
+        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(2);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[52]);
+        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glBindTexture(GL_TEXTURE_2D, sunTexture);
+        gl.glGenerateMipmap(GL_TEXTURE_2D);
+        gl.glFrontFace(GL_CCW);
+        //gl.glEnable(GL_BLEND);
+        //gl.glBlendFunc(GL_ONE,GL_ZERO);
+        gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
+        //gl.glDisable(GL_BLEND);
+        mvStack.popMatrix();
+        mvStack.popMatrix();
+
+
         mvStack.popMatrix();
     }
 
@@ -461,8 +515,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[22]);
             FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
             gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-
-
         }
         { // imported model
             Vertex3D[] vertices = plantModel.getVertices();
@@ -527,6 +579,36 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
 
 
+        }
+        { // SUN
+            Vertex3D[] vertices = rock.getVertices();
+            int[] indices = rock.getIndices();
+            float[] fvalues = new float[indices.length * 3];
+            float[] tvalues = new float[indices.length * 2];
+            float[] nvalues = new float[indices.length * 3];
+            for (int i = 0; i < indices.length; i++)
+            {
+                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+                nvalues[i * 3] = -(float) (vertices[indices[i]]).getNormalX();
+                nvalues[i * 3 + 1] = -(float) (vertices[indices[i]]).getNormalY();
+                nvalues[i * 3 + 2] = -(float) (vertices[indices[i]]).getNormalZ();
+            }
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[50]);
+            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[51]);
+            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[52]);
+            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
         }
     }
 
@@ -622,34 +704,46 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 //        }
     }
 
+
     @Override
     public void mouseWheelMoved(MouseWheelEvent e)
     {
         if (e.getUnitsToScroll() < 0) {
-            Vector3D t = new Vector3D();
-            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
-            t.scale(0.5f);
-            xyz = xyz.add(t);
-            zoom += 1f;
+            lightLoc.setY(lightLoc.getY()+.5);
+//            Vector3D t = new Vector3D();
+//            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
+//            t.scale(0.5f);
+//            xyz = xyz.add(t);
+//            zoom += 1f;
            // System.out.println("wheels down size is " + xyz.getZ());
         } else {
-            Vector3D t = new Vector3D();
-            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
-            t.scale(-0.5f);
-            xyz = xyz.add(t);
-            //if  (zoom > 1 )
-            zoom -= 1f;
+            lightLoc.setY(lightLoc.getY()-.5);
+//            Vector3D t = new Vector3D();
+//            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
+//            t.scale(-0.5f);
+//            xyz = xyz.add(t);
+//            //if  (zoom > 1 )
+//            zoom -= 1f;
            // System.out.println("wheels down size is " + xyz.getZ());
         }
     }
 
-
     @Override
-    public void keyTyped(KeyEvent e)
-    {
-
+    public void mouseDragged(MouseEvent e) {
+        if (mousePoint.getX() > e.getX()) lightLoc.setX(lightLoc.getX()-.5);
+        if (mousePoint.getX() < e.getX()) lightLoc.setX(lightLoc.getX()+.5);
+        if (mousePoint.getY() > e.getY()) lightLoc.setZ(lightLoc.getZ()-.5);
+        if (mousePoint.getY() < e.getY()) lightLoc.setZ(lightLoc.getZ()+.5);
+        mousePoint.setLocation(e.getPoint());
     }
 
+    @Override public void mouseMoved(MouseEvent e) {}
+    @Override public void mouseClicked(MouseEvent e) {}
+    @Override public void mousePressed(MouseEvent e) { mousePoint.setLocation(e.getPoint());}
+    @Override public void mouseReleased(MouseEvent e) {}
+    @Override public void mouseEntered(MouseEvent e) {}
+    @Override public void mouseExited(MouseEvent e) {}
+    @Override public void keyTyped(KeyEvent e) {}
     @Override
     public void keyPressed(KeyEvent e)
     {
@@ -795,17 +889,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         amap.put("panleft", panleft);
 
     }
-
-    @Override
-    public void keyPressed(com.jogamp.newt.event.KeyEvent keyEvent) {
-        System.out.print("key pressed jogl");
-    }
-
-    @Override
-    public void keyReleased(com.jogamp.newt.event.KeyEvent keyEvent) {
-
-    }
-
 
     private class ZoomIn extends AbstractAction
     {
