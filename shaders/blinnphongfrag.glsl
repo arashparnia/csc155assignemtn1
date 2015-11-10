@@ -34,9 +34,24 @@ layout (binding=0)  uniform sampler2D s;
 
 void main(void)
 {	// normalize the light, normal, and view vectors:
+
+
 	vec3 L = normalize(varyingLightDir);
 	vec3 N = normalize(varyingNormal);
 	vec3 V = normalize(-varyingVertPos);
+//
+//    vec3 nn = (sin(V.x),V.y,cos(V.z));
+//    N = dot(N,nn);
+// float a = 0.5; // a controls depth of bumps
+//  float b = 200.0; // b controls width of bumps
+//  float x = varyingVertPos.x;
+//  float y = varyingVertPos.y;
+//  float z = varyingVertPos.z;
+//  N.x = varyingNormal.x*0.8 + a*sin(b*x) * cos(b*x) ;
+// // N.y = varyingNormal.y*0.8 + a*sin(b*y);
+//  N.z = varyingNormal.z*0.8 + a*cos(b*z)* sin(b*z);
+//  N = normalize(N);
+
 
 	// get the angle between the light and surface normal:
 	float cosTheta = dot(L,N);

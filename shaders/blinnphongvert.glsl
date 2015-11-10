@@ -35,7 +35,10 @@ uniform int l;
 void main(void)
 {
 
-    //gl_ClipDistance[0] = dot(vertPos, (0.0, 0.0, 1.0, 0.2));
+   // vec4 clip_plane = (0.0, 0.0, 1.0, 0.2);
+
+    //gl_ClipDistance[0] = dot(vec4(vertPos,1.0), clip_plane);
+
 
     if (gl_InstanceID > 0){
         float x = (1.3 * sin( gl_InstanceID )) * (gl_InstanceID/5);
