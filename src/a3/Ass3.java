@@ -5,10 +5,7 @@ package a3;
  */
 
 import com.jogamp.newt.event.*;
-import com.jogamp.opengl.GL;
-import com.jogamp.opengl.GL4;
-import com.jogamp.opengl.GLAutoDrawable;
-import com.jogamp.opengl.GLEventListener;
+import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.test.junit.graph.demos.ui.UIShape;
 import graphicslib3D.*;
@@ -22,9 +19,8 @@ import java.awt.event.MouseListener;
 import java.nio.FloatBuffer;
 import java.util.Random;
 import static com.jogamp.opengl.GL.*;
-import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
-import static com.jogamp.opengl.GL.GL_TRIANGLES;
-import static com.jogamp.opengl.GL2ES3.GL_COLOR;
+import com.jogamp.opengl.*;
+
 
 import models.ImportedModel;
 import shapes.Cube;
@@ -38,10 +34,10 @@ import static com.jogamp.opengl.GL.GL_CCW;
 
 
 public class Ass3 extends JFrame implements GLEventListener, ActionListener, MouseListener,MouseWheelListener,MouseMotionListener, KeyListener{
-
     private boolean animated = true;
     private Point mousePoint= new Point();
     public static boolean axis = false;
+
     private Dimension dimention = new Dimension(1000, 1000);
     private GLCanvas myCanvas;
 
@@ -66,22 +62,18 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     float aspect;
     Matrix3D pMat;
     MatrixStack mvStack;
-    //------------------------------------------------------------------------------------------------------
-    //OBJECTS
+    //----------------------------------------------------------------------------------------OBJECTS
     private Cube b = new Cube();
     private shapes.Ground ground = new shapes.Ground(1000);
     private shapes.Sphere mySphere = new shapes.Sphere(48);
     private shapes.Astroid rock = new shapes.Astroid(100);
-    private shapes.Ring ring = new shapes.Ring(20, 40, 48);
     private ImportedModel grassModel,myModel;
-    //------------------------------------------------------------------------------------------------------
-    // MATRICIES
+    //------------------------------------------------------------------------------------------MATRICIES
     private Matrix3D m_matrix = new Matrix3D();
     private Matrix3D v_matrix = new Matrix3D();
     private Matrix3D mv_matrix = new Matrix3D();
     private Matrix3D proj_matrix = new Matrix3D();
-    //------------------------------------------------------------------------------------------------------
-    //CAMERA
+    //-------------------------------------------------------------------------------------------CAMERA
     public static float zoom = 0.0f;
     public static float pan = 0.0f;
     public static float pitch = 0.0f;
@@ -91,14 +83,10 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     private Vector3D v = new Vector3D(0, 1, 0);
     private Vector3D n = new Vector3D(0, 0, 1 );
     private Vector3D xyz = new Vector3D(0,0,0);
-    private int lookatcamera = 0;
-    //------------------------------------------------------------------------------------------------------
-    //TEXTURE
+    //------------------------------------------------------------------------------------------TEXTURE
     private TextureReader tr = new TextureReader();
     private  int sunTexture,moonTexture,grassTexture,tigerTexture;
-    //------------------------------------------------------------------------------------------------------
-
-    // MATERIALS
+    //-------------------------------------------------------------------------------------------MATERIALS
     private float[] rockambient = {0.0f,0.0f,0.0f,1.0f};
     private float[] rockdiffuse = {0.1f,0.1f,0.1f,1.0f};
     private float[] rockspecular =  {0.1f,0.1f,0.1f,1.0f};
@@ -117,26 +105,16 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     private float[] sunemission = {1.0f,1.0f,1.0f,1.0f};
     private float sunshininess = 10f;
     graphicslib3D.Material sunMaterial = new Material("sun",sunambient,sundiffuse,sunspecular,sunemission,sunshininess);
-//    private float[] offambient = {1.0f,1.0f,1.0f,1.0f};
-//    private float[] offdiffuse = {0.0f,0.0f,0.0f,1.0f};
-//    private float[] offspecular =  {0.0f,0.0f,0.0f,1.0f};
-//    private float[] offemission = {0.0f,0.0f,0.0f,1.0f};
-//    private float offshininess = 0f;
-//    graphicslib3D.Material offMaterial = new Material("off",offambient,offdiffuse,offspecular,offemission,offshininess);
-    //------------------------------------------------------------------------------------------------------
-
-    //LIGHT
+    //-------------------------------------------------------------------------------------------------LIGHT
     private int lights = 1;
     private PositionalLight currentLight = new PositionalLight();
-    private Point3D lightLoc = new Point3D( 0f,5f,0f);
+    private Point3D lightLoc = new Point3D( 8f,4f,11f);
     float [] globalAmbient = new float[] { 0.1f, 0.1f, 0.1f, 1.0f };
     //------------------------------------------------------------------------------------------------------
-
-    public Ass3()
-    {
+    public Ass3() {
         setTitle("Assignment 3 CSC155");
-        setSize(dimention);
-
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setSize(screenSize);
         myCanvas = new GLCanvas();
         myCanvas.addGLEventListener(this);
         rand = new Random();
@@ -147,7 +125,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         myCanvas.addMouseMotionListener(this);
         myCanvas.addMouseListener(this);
         myCanvas.requestFocus();
-        //this.addMouseMotionListener(this);
         keyMaping();
         setVisible(true);
         this.addWindowListener(new WindowAdapter() {
@@ -157,12 +134,10 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             }
         });
     }
-    public void init(GLAutoDrawable drawable)
-    {
+    public void init(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
+        gl.glEnable(gl.GL_CLIP_DISTANCE0);
         Shader sh = new Shader();
-
-
         rendering_program_axis = sh.createShaderPrograms(drawable,"shaders/axisvert.glsl","shaders/axisfrag.glsl");
         rendering_program_no_lighting = sh.createShaderPrograms(drawable,"shaders/vert.glsl","shaders/frag.glsl");
         rendering_program_blinnphong_lighting = sh.createShaderPrograms(drawable,"shaders/blinnphongvert.glsl","shaders/blinnphongfrag.glsl");
@@ -171,25 +146,21 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         myModel = new ImportedModel("Tiger.obj");
 
         setupVertices(gl);
-        xyz.setZ(20);
-        xyz.setY(5);
+        xyz.setZ(25);
+        xyz.setY(4);
         Matrix3D r = new Matrix3D();
-        r.rotate(-15, u.normalize());
+        r.rotate(5, u.normalize());
         n = n.mult(r);
         v = v.mult(r);
-
-        // could be handleed directly with layout in frag shader
 
         grassTexture    = tr.loadTexture(drawable, "textures/grass.jpg");
         sunTexture  = tr.loadTexture(drawable, "textures/sunmap.jpg");
         moonTexture  = tr.loadTexture(drawable, "textures/moonmap1k.jpg");
         tigerTexture = tr.loadTexture(drawable, "textures/tigertexture.jpg");
         animator = new Animator(myCanvas);
-        Thread thread =
-                new Thread(new Runnable(){ public void run() { animator.start();}});
+        Thread thread =new Thread(new Runnable(){ public void run() { animator.start();}});
         thread.start();
     }
-
     private Matrix3D getUVNCamera() {
         Matrix3D uvnMatrix = new Matrix3D();
         uvnMatrix.setRow(0, u);
@@ -204,8 +175,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         uvnMatrix.concatenate(t);
         return uvnMatrix;
     }
-
-    private void  setupDisplay(GL4 gl){
+    private void setupDisplay(GL4 gl){
         gl.glBindVertexArray(vao[0]);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
@@ -216,12 +186,11 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glGenerateMipmap(GL_TEXTURE_2D);
         gl.glFrontFace(GL_CCW);
     }
-    public void display(GLAutoDrawable drawable)
-    {
+    public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
         gl.glClear(GL_DEPTH_BUFFER_BIT);
         FloatBuffer background = FloatBuffer.allocate(4);
-        gl.glClearBufferfv(GL_COLOR, 0, background);
+        gl.glClearBufferfv(gl.GL_COLOR, 0, background);
         gl.glUseProgram(rendering_program_blinnphong_lighting);
         mv_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "mv_matrix");
         proj_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "proj_matrix");
@@ -245,12 +214,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 //----------------------------------------------------------------------------------ground
         installLights(mvStack.peek(),grassMaterial, drawable);
         mvStack.pushMatrix();
-        //mvStack.translate(-50,0,50);
         mvStack.scale(100, 1, 100);
-        //mvStack.scale(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
-        mvStack.pushMatrix();
-        //mvStack.rotate(115, 1, 1,1);
-       // mvStack.rotate(-degreePerSec(0.01f),0,1,0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[100]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -266,11 +230,10 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glFrontFace(GL_CW);
         gl.glDrawArrays(GL_TRIANGLES, 0, b.getFValues().length/3);
         mvStack.popMatrix();
-        mvStack.popMatrix();
 //------------------------------------------------------------------------------- TIGER
-        installLights(mvStack.peek(),Material.GOLD, drawable);
+        installLights(mvStack.peek(),Material.BRONZE, drawable);
         mvStack.pushMatrix();
-        mvStack.translate(5,0,10);
+        mvStack.translate(5,1,10);
         mvStack.scale(0.003, 0.003, 0.003);
         mvStack.rotate(-85, 0, 1,0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[30]);
@@ -288,10 +251,10 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.popMatrix();
         //-------------------------------------------------------
         //------------------------------------------------------------------------ROCK
-        installLights(mvStack.peek(),Material.SILVER, drawable);
+        installLights(mvStack.peek(),Material.GOLD, drawable);
         mvStack.pushMatrix();
         mvStack.translate(-5,1,-5);
-        mvStack.scale(2, 2, 2);
+        mvStack.scale(4, 20, 4);
         //mvStack.scale(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
         mvStack.pushMatrix();
         mvStack.rotate(-15, 0, 0,1);
@@ -365,7 +328,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
         mvStack.popMatrix();
     }
-
     private void setupVerteciesCube(GL4 gl){
         float[] fvalues = b.getFValues();
         float[] tvalues = b.getTValues();
@@ -580,8 +542,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         setupVerticesRockInverseNormals(gl);
         setupVerteciesCube(gl);
     }
-
-
     private Matrix3D perspective(float fovy, float aspect, float n, float f) {
         float q = 1.0f / (float) Math.tan((float) Math.toRadians(0.5f * fovy));
         float A = q / aspect;
@@ -628,8 +588,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             gl.glProgramUniform1f(rendering_program_blinnphong_lighting, MshiLoc, currentMaterial.getShininess());
 
     }
-
-
     private Matrix3D lookAt(graphicslib3D.Point3D eyeP, graphicslib3D.Point3D centerP, Vector3D upV) {	Vector3D eyeV = new Vector3D(eyeP);
         Vector3D cenV = new Vector3D(centerP);
         Vector3D f = (cenV.minus(eyeV)).normalize();
@@ -647,13 +605,10 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         return(l.transpose());
     }
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {}
-
     private float degreePerSec(float rev) {
         return (float) (System.currentTimeMillis() % 360000) / (1 / rev);
     }
-
     public void dispose(GLAutoDrawable drawable) {}
-
     public static int randInt(int min, int max) {
         Random rand = new Random();
         // nextInt is normally exclusive of the top value,
@@ -661,26 +616,20 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         int randomNum = rand.nextInt((max - min) + 1) + min;
         return randomNum;
     }
-
-    // ---------------------------------- CONTROLS --------------------------------------
-    @Override
-    public void mouseWheelMoved(MouseWheelEvent e)
-    {
+    // ------------------------------------------------------------------------------------- CONTROLS
+    @Override public void mouseWheelMoved(MouseWheelEvent e) {
         if (e.getUnitsToScroll() < 0)
             lightLoc.setY(lightLoc.getY()+.1);
         else
             lightLoc.setY(lightLoc.getY()-.1);
     }
-    @Override
-
-    public void mouseDragged(MouseEvent e) {
+    @Override public void mouseDragged(MouseEvent e) {
         if (mousePoint.getX() > e.getX()) lightLoc.setX(lightLoc.getX()-.1);
         if (mousePoint.getX() < e.getX()) lightLoc.setX(lightLoc.getX()+.1);
         if (mousePoint.getY() > e.getY()) lightLoc.setZ(lightLoc.getZ()-.1);
         if (mousePoint.getY() < e.getY()) lightLoc.setZ(lightLoc.getZ()+.1);
         mousePoint.setLocation(e.getPoint());
     }
-
     @Override public void mouseMoved(MouseEvent e) {}
     @Override public void mouseClicked(MouseEvent e) {}
     @Override public void mousePressed(MouseEvent e) { mousePoint.setLocation(e.getPoint());}
@@ -688,18 +637,15 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     @Override public void mouseEntered(MouseEvent e) {}
     @Override public void mouseExited(MouseEvent e) {}
     @Override public void keyTyped(KeyEvent e) {}
-    @Override
-    public void keyPressed(KeyEvent e) {
+    @Override public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_L: {if (lights==0)lights = 1; else lights=0;break;}
             case KeyEvent.VK_SPACE: {axis = !axis;break;}
         }
     }
-
-    @Override
-    public void keyReleased(KeyEvent e) {}
-    private void keyMaping()
-    {
+    @Override public void keyReleased(KeyEvent e) {}
+    @Override public void actionPerformed(ActionEvent e) {}
+    private void keyMaping() {
         int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
         InputMap imap = this.getRootPane().getInputMap(mapName);
         ActionMap amap = this.getRootPane().getActionMap();
@@ -755,12 +701,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         amap.put("panleft", panleft);
 
     }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {}
-
-    private class ZoomIn extends AbstractAction
-    {
+    private class ZoomIn extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e) {
             Vector3D t = new Vector3D();
@@ -770,10 +711,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             zoom += 1f;
         }
     }
-
-
-    private class ZoomOut extends AbstractAction
-    {
+    private class ZoomOut extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -785,9 +723,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             zoom -= 1f;
         }
     }
-
-    private class StrafeRight extends AbstractAction
-    {
+    private class StrafeRight extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -799,9 +735,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             //System.out.println("zoom - 1.0");
         }
     }
-
-    private class StrafeLeft extends AbstractAction
-    {
+    private class StrafeLeft extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -813,8 +747,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             //System.out.println("zoom - 1.0");
         }
     }
-    private class down extends AbstractAction
-    {
+    private class down extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -825,9 +758,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             upDown -= 5f;
         }
     }
-
-    private class up extends AbstractAction
-    {
+    private class up extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -839,9 +770,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
         }
     }
-
-    private class panRight extends AbstractAction
-    {
+    private class panRight extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -852,8 +781,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
         }
     }
-    private class panLeft extends AbstractAction
-    {
+    private class panLeft extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -864,9 +792,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
         }
     }
-
-    private class pitchUp extends AbstractAction
-    {
+    private class pitchUp extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -876,9 +802,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             v = v.mult(r);
         }
     }
-
-    private class pitchDown extends AbstractAction
-    {
+    private class pitchDown extends AbstractAction {
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -888,9 +812,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             v = v.mult(r);
         }
     }
-
-
-
 }
 
 
