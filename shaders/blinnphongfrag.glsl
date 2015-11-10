@@ -1,6 +1,5 @@
 #version 430
 
-
 in vec2 tc;
 in vec3 varyingNormal;
 in vec3 varyingLightDir;
@@ -29,7 +28,9 @@ uniform Material material;
 uniform mat4 mv_matrix;
 uniform mat4 proj_matrix;
 uniform mat4 normalMat;
+uniform int l;
 layout (binding=0)  uniform sampler2D s;
+
 
 void main(void)
 {	// normalize the light, normal, and view vectors:
@@ -46,9 +47,13 @@ void main(void)
 	vec3 H = varyingHalfVector;
 
 	// compute ADS contributions (per pixel):
+	if (l==0){
+	fragColor =  texture2D(s,tc) ;//+ 0.8 * (globalAmbient * material.ambient);
+	}else{
 	fragColor = 0.2 * texture2D(s,tc) + 0.8 * (globalAmbient * material.ambient
 	+ light.ambient * material.ambient
 	+ light.diffuse * material.diffuse * max(cosTheta,0.0)
 	+ light.specular  * material.specular *
 		pow(max(dot(H,N),0.0), material.shininess*3.0) );
+	}
 }

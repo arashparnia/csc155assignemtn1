@@ -1,7 +1,7 @@
 
 layout (location = 0) in vec3 vertPos;
 layout (location = 1) in vec3 vertNormal;
-layout (location=2) in vec2 texPos;
+layout (location = 2) in vec2 texPos;
 
 out vec2 tc;
 
@@ -30,17 +30,28 @@ uniform mat4 mv_matrix;
 uniform mat4 proj_matrix;
 uniform mat4 normalMat;
 uniform sampler2D s;
+uniform int l;
 void main(void)
 {
-varyingVertPos = (mv_matrix * vec4(vertPos,1.0)).xyz;
-	varyingLightDir = light.position - varyingVertPos;
-	varyingNormal = (normalMat * vec4(vertNormal,1.0)).xyz;
+    if (gl_InstanceID > 0){
+        float x = (1.3 * sin( gl_InstanceID )) * (gl_InstanceID/5);
+        float y = -0.1;
+        float z = (1.3* cos(gl_InstanceID )) * (gl_InstanceID/5);
+        vec3 pos = vertPos + vec3(x,y,z);
 
-	varyingHalfVector =
-		normalize(normalize(varyingLightDir)
-		+ normalize(-varyingVertPos)).xyz;
-
-	gl_Position = proj_matrix * mv_matrix * vec4(vertPos,1.0);
-	tc = texPos;
+        varyingVertPos = (mv_matrix * vec4(pos,1.0)).xyz;
+        varyingLightDir = light.position - varyingVertPos;
+        varyingNormal = (normalMat * vec4(vertNormal,1.0)).xyz;
+        varyingHalfVector =normalize(normalize(varyingLightDir)+ normalize(-varyingVertPos)).xyz;
+        gl_Position = proj_matrix * mv_matrix * vec4(pos,1.0);
+        tc = texPos;
+    } else {
+        varyingVertPos = (mv_matrix * vec4(vertPos,1.0)).xyz;
+	    varyingLightDir = light.position - varyingVertPos;
+	    varyingNormal = (normalMat * vec4(vertNormal,1.0)).xyz;
+	    varyingHalfVector =normalize(normalize(varyingLightDir) + normalize(-varyingVertPos)).xyz;
+	    gl_Position = proj_matrix * mv_matrix * vec4(vertPos,1.0);
+	    tc = texPos;
+	}
 }
 

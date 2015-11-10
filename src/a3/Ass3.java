@@ -3,7 +3,6 @@ package a3;
 /**
  * Created by arash on 10/31/2015.
  */
-// todo : create seperate shader for sun
 
 import com.jogamp.newt.event.*;
 import com.jogamp.opengl.GL;
@@ -28,6 +27,7 @@ import static com.jogamp.opengl.GL.GL_TRIANGLES;
 import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 
 import models.ImportedModel;
+import shapes.Cube;
 import utilities.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -46,7 +46,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     private GLCanvas myCanvas;
 
     private int vao[] = new int[1];
-    private int vbo[] = new int[100];
+    private int vbo[] = new int[200];
 
     private int rendering_program;
     private int rendering_program_axis;
@@ -58,13 +58,22 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     private Animator animator;
 
     private Random rand;
+
+    int mv_loc ;
+    int proj_loc;
+    int n_location ;
+    int light ;
+    float aspect;
+    Matrix3D pMat;
+    MatrixStack mvStack;
     //------------------------------------------------------------------------------------------------------
     //OBJECTS
+    private Cube b = new Cube();
     private shapes.Ground ground = new shapes.Ground(1000);
     private shapes.Sphere mySphere = new shapes.Sphere(48);
     private shapes.Astroid rock = new shapes.Astroid(100);
     private shapes.Ring ring = new shapes.Ring(20, 40, 48);
-    private ImportedModel grassModel,plantModel;
+    private ImportedModel grassModel,myModel;
     //------------------------------------------------------------------------------------------------------
     // MATRICIES
     private Matrix3D m_matrix = new Matrix3D();
@@ -86,7 +95,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     //------------------------------------------------------------------------------------------------------
     //TEXTURE
     private TextureReader tr = new TextureReader();
-    private  int sunTexture,moonTexture,grassTexture,treedry;
+    private  int sunTexture,moonTexture,grassTexture,tigerTexture;
     //------------------------------------------------------------------------------------------------------
 
     // MATERIALS
@@ -108,11 +117,18 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     private float[] sunemission = {1.0f,1.0f,1.0f,1.0f};
     private float sunshininess = 10f;
     graphicslib3D.Material sunMaterial = new Material("sun",sunambient,sundiffuse,sunspecular,sunemission,sunshininess);
+//    private float[] offambient = {1.0f,1.0f,1.0f,1.0f};
+//    private float[] offdiffuse = {0.0f,0.0f,0.0f,1.0f};
+//    private float[] offspecular =  {0.0f,0.0f,0.0f,1.0f};
+//    private float[] offemission = {0.0f,0.0f,0.0f,1.0f};
+//    private float offshininess = 0f;
+//    graphicslib3D.Material offMaterial = new Material("off",offambient,offdiffuse,offspecular,offemission,offshininess);
     //------------------------------------------------------------------------------------------------------
 
     //LIGHT
+    private int lights = 1;
     private PositionalLight currentLight = new PositionalLight();
-    private Point3D lightLoc = new Point3D( 10f,20f,10f);
+    private Point3D lightLoc = new Point3D( 0f,5f,0f);
     float [] globalAmbient = new float[] { 0.1f, 0.1f, 0.1f, 1.0f };
     //------------------------------------------------------------------------------------------------------
 
@@ -125,8 +141,9 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         myCanvas.addGLEventListener(this);
         rand = new Random();
         add(myCanvas);
+        myCanvas.addKeyListener(this);
         this.addKeyListener(this);
-        this.addMouseWheelListener(this);
+        myCanvas.addMouseWheelListener(this);
         myCanvas.addMouseMotionListener(this);
         myCanvas.addMouseListener(this);
         myCanvas.requestFocus();
@@ -140,8 +157,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
             }
         });
     }
-
-
     public void init(GLAutoDrawable drawable)
     {
         GL4 gl = (GL4) drawable.getGL();
@@ -153,11 +168,11 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         rendering_program_blinnphong_lighting = sh.createShaderPrograms(drawable,"shaders/blinnphongvert.glsl","shaders/blinnphongfrag.glsl");
 
         grassModel = new ImportedModel("Grass_02.obj");
-        plantModel = new ImportedModel("tree.obj");
+        myModel = new ImportedModel("Tiger.obj");
 
         setupVertices(gl);
-        xyz.setZ(120);
-        xyz.setY(30);
+        xyz.setZ(20);
+        xyz.setY(5);
         Matrix3D r = new Matrix3D();
         r.rotate(-15, u.normalize());
         n = n.mult(r);
@@ -168,15 +183,14 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         grassTexture    = tr.loadTexture(drawable, "textures/grass.jpg");
         sunTexture  = tr.loadTexture(drawable, "textures/sunmap.jpg");
         moonTexture  = tr.loadTexture(drawable, "textures/moonmap1k.jpg");
-        treedry = tr.loadTexture(drawable, "textures/tree_dry.jpg");
+        tigerTexture = tr.loadTexture(drawable, "textures/tigertexture.jpg");
         animator = new Animator(myCanvas);
         Thread thread =
                 new Thread(new Runnable(){ public void run() { animator.start();}});
         thread.start();
     }
 
-    private Matrix3D getUVNCamera()
-    {
+    private Matrix3D getUVNCamera() {
         Matrix3D uvnMatrix = new Matrix3D();
         uvnMatrix.setRow(0, u);
         uvnMatrix.setRow(1, v);
@@ -191,222 +205,160 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         return uvnMatrix;
     }
 
-
-
+    private void  setupDisplay(GL4 gl){
+        gl.glBindVertexArray(vao[0]);
+        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glGenerateMipmap(GL_TEXTURE_2D);
+        gl.glFrontFace(GL_CCW);
+    }
     public void display(GLAutoDrawable drawable)
     {
         GL4 gl = (GL4) drawable.getGL();
-
         gl.glClear(GL_DEPTH_BUFFER_BIT);
         FloatBuffer background = FloatBuffer.allocate(4);
         gl.glClearBufferfv(GL_COLOR, 0, background);
         gl.glUseProgram(rendering_program_blinnphong_lighting);
-
-
-        int mv_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "mv_matrix");
-        int proj_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "proj_matrix");
-        int n_location = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "normalMat");
-
-        double orbitSpeed[] = new double[15];
-        float ii = 8.0f;
-        for (int i = 0; i < 15; i++)
-        {
-            ii-=0.3f;
-            orbitSpeed[i] = (double) (System.currentTimeMillis() % 360000) / (1000.0 * ii);
-        }
-        float aspect = myCanvas.getWidth() / myCanvas.getHeight();
-        Matrix3D pMat = perspective(60.0f, aspect, 0.001f, 10000.0f);
-        //Matrix3D vMat = new Matrix3D();
-        //vMat.translate(0,0,0);
-
-        MatrixStack mvStack = new MatrixStack(100);
-
-        // push view matrix onto the stack
+        mv_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "mv_matrix");
+        proj_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "proj_matrix");
+        n_location = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "normalMat");
+        light = gl.glGetUniformLocation(rendering_program_blinnphong_lighting,"l");
+        gl.glUniform1i(light,lights);
+        aspect = myCanvas.getWidth() / myCanvas.getHeight();
+        pMat = perspective(60.0f, aspect, 0.001f, 10000.0f);
+        mvStack = new MatrixStack(100);
 
         // --------------------------- CAMERA
 
         mvStack.pushMatrix();
         mvStack.multMatrix(getUVNCamera());
 
-        //Matrix3D lookat =  lookAt(new Point3D(0,orbitSpeed[10],0),new Point3D(0,0,0),new Vector3D(0,1,0));
-        //lightLoc.mult(lookat);
 //        int min = -50; int max = 50;
 //        lightLoc.setX(lightLoc.getX()+rand.nextInt((max - min) + 1) + min);
 //        lightLoc.setY(lightLoc.getY()+rand.nextInt((max - min) + 1) + min);
 //        lightLoc.setZ(lightLoc.getZ()+rand.nextInt((max - min) + 1) + min);
         currentLight.setPosition(lightLoc);
-
-
-        //GRASS object
+//----------------------------------------------------------------------------------ground
         installLights(mvStack.peek(),grassMaterial, drawable);
         mvStack.pushMatrix();
-        // mvStack.translate(-500,0,500);
-        mvStack.scale(10, 10, 10);
-        mvStack.pushMatrix();
-
-        gl.glBindVertexArray(vao[0]);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[40]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(0);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[41]);
-        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(2);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[42]);
-        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(1);
-        gl.glActiveTexture(GL_TEXTURE0);
-        gl.glEnable(GL_CULL_FACE);
-        gl.glEnable(GL_DEPTH_TEST);
-        gl.glBindTexture(GL_TEXTURE_2D, grassTexture);
-        gl.glGenerateMipmap(GL_TEXTURE_2D);
-        gl.glFrontFace(GL_CW);
-        gl.glDrawArrays(GL_TRIANGLES, 0, grassModel.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();
-        //tree
-        installLights(mvStack.peek(),Material.SILVER, drawable);
-        mvStack.pushMatrix();
-       // mvStack.translate(-500,0,500);
-        mvStack.scale(200, 200, 200);
-        mvStack.pushMatrix();
-        //mvStack.rotate(115, 1, 1,1);
-        //mvStack.rotate(-degreePerSec(0.01f),0,1,0);
-        gl.glBindVertexArray(vao[0]);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[30]);
-        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(0);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[31]);
-        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(2);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[32]);
-        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(1);
-        gl.glActiveTexture(GL_TEXTURE0);
-        gl.glEnable(GL_CULL_FACE);
-        gl.glEnable(GL_DEPTH_TEST);
-        gl.glBindTexture(GL_TEXTURE_2D, treedry);
-        gl.glGenerateMipmap(GL_TEXTURE_2D);
-        gl.glFrontFace(GL_CCW);
-        gl.glDrawArrays(GL_TRIANGLES, 0, plantModel.getIndices().length);
-        gl.glFrontFace(GL_CW);
-        gl.glDrawArrays(GL_TRIANGLES, 0, plantModel.getIndices().length);
-        mvStack.popMatrix();
-        mvStack.popMatrix();
-//ROCK
-        installLights(mvStack.peek(),Material.SILVER, drawable);
-        mvStack.pushMatrix();
-        mvStack.translate(-50,0,50);
-        mvStack.scale(20, 20, 20);
+        //mvStack.translate(-50,0,50);
+        mvStack.scale(100, 1, 100);
         //mvStack.scale(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
         mvStack.pushMatrix();
         //mvStack.rotate(115, 1, 1,1);
-        mvStack.rotate(-degreePerSec(0.01f),0,1,0);
-        gl.glBindVertexArray(vao[0]);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
+       // mvStack.rotate(-degreePerSec(0.01f),0,1,0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[100]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[101]);
+        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[102]);
+        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(2);
+         setupDisplay(gl);
+        gl.glBindTexture(GL_TEXTURE_2D, grassTexture);
+        gl.glGenerateMipmap(GL_TEXTURE_2D);
+        gl.glFrontFace(GL_CW);
+        gl.glDrawArrays(GL_TRIANGLES, 0, b.getFValues().length/3);
+        mvStack.popMatrix();
+        mvStack.popMatrix();
+//------------------------------------------------------------------------------- TIGER
+        installLights(mvStack.peek(),Material.GOLD, drawable);
+        mvStack.pushMatrix();
+        mvStack.translate(5,0,10);
+        mvStack.scale(0.003, 0.003, 0.003);
+        mvStack.rotate(-85, 0, 1,0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[30]);
+        gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[31]);
+        gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[32]);
+        gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(2);
+        gl.glBindTexture(GL_TEXTURE_2D, tigerTexture);
+        setupDisplay(gl);
+        gl.glDrawArrays(GL_TRIANGLES, 0, myModel.getIndices().length);
+        mvStack.popMatrix();
+        //-------------------------------------------------------
+        //------------------------------------------------------------------------ROCK
+        installLights(mvStack.peek(),Material.SILVER, drawable);
+        mvStack.pushMatrix();
+        mvStack.translate(-5,1,-5);
+        mvStack.scale(2, 2, 2);
+        //mvStack.scale(rand.nextFloat(),rand.nextFloat(),rand.nextFloat());
+        mvStack.pushMatrix();
+        mvStack.rotate(-15, 0, 0,1);
+        //mvStack.rotate(-degreePerSec(0.01f),0,1,0);
+
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[20]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
-
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[21]);
         gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(2);
-
+        gl.glEnableVertexAttribArray(1);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[22]);
         gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(1);
-        gl.glActiveTexture(GL_TEXTURE0);
-        gl.glEnable(GL_CULL_FACE);
-        gl.glEnable(GL_DEPTH_TEST);
+        gl.glEnableVertexAttribArray(2);
         gl.glBindTexture(GL_TEXTURE_2D, moonTexture);
-        gl.glGenerateMipmap(GL_TEXTURE_2D);
-        gl.glFrontFace(GL_CCW);
-        gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
-        gl.glFrontFace(GL_CW);
+        setupDisplay(gl);
         gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
         mvStack.popMatrix();
         mvStack.popMatrix();
-        //GRASS
-        for(int i = -100;i<100;i+=100) {
-            for (int j = -100; j < 100; j += 100) {
+
+        //---------------------------------------------------------------------------GRASS
                 installLights(mvStack.peek(), grassMaterial, drawable);
                 mvStack.pushMatrix();
-                mvStack.translate(i, 0, j);
-                mvStack.scale(.1, .1, .1);
+                //mvStack.translate(i, 0, j);
+                //mvStack.scale(.1, .1, .1);
                 mvStack.pushMatrix();
-                //mvStack.rotate(-degreePerSec(0.01f), 0, 1,0);
-                gl.glBindVertexArray(vao[0]);
-                gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-                gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-                gl.glUniformMatrix4fv(n_location, 1, false, (mvStack.peek().inverse()).transpose().getFloatValues(), 0);
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[10]);
+
+                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[40]);
                 gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
                 gl.glEnableVertexAttribArray(0);
-
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[11]);
+                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[41]);
                 gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
-                gl.glEnableVertexAttribArray(2);
-
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[12]);
-                gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
                 gl.glEnableVertexAttribArray(1);
-                gl.glActiveTexture(GL_TEXTURE0);
-
-                gl.glEnable(GL_CULL_FACE);
-                gl.glFrontFace(GL_CCW);
-                gl.glEnable(GL_DEPTH_TEST);
-                //gl.glDepthFunc(GL_EQUAL);
+                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[42]);
+                gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
+                gl.glEnableVertexAttribArray(2);
                 gl.glBindTexture(GL_TEXTURE_2D, grassTexture);
                 gl.glGenerateMipmap(GL_TEXTURE_2D);
-                gl.glDrawArrays(GL_TRIANGLES, 0, ground.getIndices().length);
+                setupDisplay(gl);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 0, grassModel.getIndices().length,100);
 
                 mvStack.popMatrix();
                 mvStack.popMatrix();
-            }
-        }
-        //light
+
+        //----------------------------------------------------------------------------------light
         installLights(mvStack.peek(),sunMaterial, drawable);
         mvStack.pushMatrix();
         mvStack.translate(lightLoc.getX(),lightLoc.getY(),lightLoc.getZ());
         mvStack.scale(0.1, 0.1, 0.1);
         mvStack.pushMatrix();
-        mvStack.rotate(-degreePerSec(1f),0,1,0);
-        gl.glBindVertexArray(vao[0]);
-        gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false,(mvStack.peek().inverse()).transpose().getFloatValues(),0);
+        mvStack.rotate(degreePerSec(1f),1,0,0);
+        mvStack.scale(0.5+rand.nextFloat()/2,0.5+rand.nextFloat()/2,0.5+rand.nextFloat()/2);
+
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[50]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
-
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[51]);
         gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(2);
-
+        gl.glEnableVertexAttribArray(1);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[52]);
         gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(1);
-        gl.glActiveTexture(GL_TEXTURE0);
-        gl.glEnable(GL_CULL_FACE);
-        gl.glEnable(GL_DEPTH_TEST);
+        gl.glEnableVertexAttribArray(2);
+        setupDisplay(gl);
         gl.glBindTexture(GL_TEXTURE_2D, sunTexture);
         gl.glGenerateMipmap(GL_TEXTURE_2D);
         gl.glFrontFace(GL_CCW);
-        //gl.glEnable(GL_BLEND);
-        //gl.glBlendFunc(GL_ONE,GL_ZERO);
         gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
-        //gl.glDisable(GL_BLEND);
         mvStack.popMatrix();
         mvStack.popMatrix();
 
@@ -414,207 +366,223 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.popMatrix();
     }
 
+    private void setupVerteciesCube(GL4 gl){
+        float[] fvalues = b.getFValues();
+        float[] tvalues = b.getTValues();
+        float[] nvalues = b.getNValues();
 
-    private void setupVertices(GL4 gl)
-    {
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[100]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[101]);
+        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[102]);
+        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+    }//100,101,102
+    private void setupVerticesSphere(GL4 gl){
+        Vertex3D[] vertices = mySphere.getVertices();
+        int[] indices = mySphere.getIndices();
+        float[] fvalues = new float[indices.length * 3];
+        float[] tvalues = new float[indices.length * 2];
+        float[] nvalues = new float[indices.length * 3];
+        for (int i = 0; i < indices.length; i++)
+        {
+            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+            nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
+            nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
+            nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+        }
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
+        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+    }//00,01,02
+    private void setupVerticesGrass(GL4 gl) { // GRASS
+        Vertex3D[] vertices = ground.getVertices();
+        int[] indices = ground.getIndices();
+        float[] fvalues = new float[indices.length * 3];
+        float[] tvalues = new float[indices.length * 2];
+        float[] nvalues = new float[indices.length * 3];
+        for (int i = 0; i < indices.length; i++)
+        {
+            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+            nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
+            nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
+            nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+        }
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[10]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[11]);
+        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[12]);
+        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+
+
+    }//10,11,12
+    private void setupVerticesRock(GL4 gl) { // ROCK
+        Vertex3D[] vertices = rock.getVertices();
+        int[] indices = rock.getIndices();
+        float[] fvalues = new float[indices.length * 3];
+        float[] tvalues = new float[indices.length * 2];
+        float[] nvalues = new float[indices.length * 3];
+        for (int i = 0; i < indices.length; i++)
+        {
+            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+            nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
+            nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
+            nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+        }
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[20]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[21]);
+        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[22]);
+        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+    }//20,21,22
+    private void setupVerticesMyModel(GL4 gl){ // imported model
+        Vertex3D[] vertices = myModel.getVertices();
+        int[] indices = myModel.getIndices();
+        float[] fvalues = new float[indices.length * 3];
+        float[] tvalues = new float[indices.length * 2];
+        float[] nvalues = new float[indices.length * 3];
+        for (int i = 0; i < indices.length; i++)
+        {
+            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+            nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
+            nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
+            nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+        }
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[30]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[31]);
+        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[32]);
+        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+
+
+    }//30,31,32
+    private void setupVerticesGrassModel(GL4 gl) { // imported model
+        Vertex3D[] vertices = grassModel.getVertices();
+        int[] indices = grassModel.getIndices();
+        float[] fvalues = new float[indices.length * 3];
+        float[] tvalues = new float[indices.length * 2];
+        float[] nvalues = new float[indices.length * 3];
+        for (int i = 0; i < indices.length; i++)
+        {
+            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+            nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
+            nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
+            nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
+        }
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[40]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[41]);
+        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[42]);
+        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+
+
+    }//40,41,42
+    private void setupVerticesRockInverseNormals(GL4 gl) { // SUN
+        Vertex3D[] vertices = rock.getVertices();
+        int[] indices = rock.getIndices();
+        float[] fvalues = new float[indices.length * 3];
+        float[] tvalues = new float[indices.length * 2];
+        float[] nvalues = new float[indices.length * 3];
+        for (int i = 0; i < indices.length; i++)
+        {
+            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
+            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
+            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
+            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
+            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
+            nvalues[i * 3] = -(float) (vertices[indices[i]]).getNormalX();
+            nvalues[i * 3 + 1] = -(float) (vertices[indices[i]]).getNormalY();
+            nvalues[i * 3 + 2] = -(float) (vertices[indices[i]]).getNormalZ();
+        }
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[50]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[51]);
+        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[52]);
+        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
+    }//50,51,52
+    private void setupVertices(GL4 gl) {
         gl.glGenVertexArrays(vao.length, vao,0);
         gl.glBindVertexArray(vao[0]);
         gl.glGenBuffers(vbo.length, vbo, 0);
-        {
-            Vertex3D[] vertices = mySphere.getVertices();
-            int[] indices = mySphere.getIndices();
-            float[] fvalues = new float[indices.length * 3];
-            float[] tvalues = new float[indices.length * 2];
-            float[] nvalues = new float[indices.length * 3];
-            for (int i = 0; i < indices.length; i++)
-            {
-                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-                nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
-                nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
-                nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
-            }
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
-            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
-            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-
-
-        }
-
-        { // GRASS
-            Vertex3D[] vertices = ground.getVertices();
-            int[] indices = ground.getIndices();
-            float[] fvalues = new float[indices.length * 3];
-            float[] tvalues = new float[indices.length * 2];
-            float[] nvalues = new float[indices.length * 3];
-            for (int i = 0; i < indices.length; i++)
-            {
-                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-                nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
-                nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
-                nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
-            }
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[10]);
-            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[11]);
-            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[12]);
-            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-
-
-        }
-
-        { // ROCK
-            Vertex3D[] vertices = rock.getVertices();
-            int[] indices = rock.getIndices();
-            float[] fvalues = new float[indices.length * 3];
-            float[] tvalues = new float[indices.length * 2];
-            float[] nvalues = new float[indices.length * 3];
-            for (int i = 0; i < indices.length; i++)
-            {
-                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-                nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
-                nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
-                nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
-            }
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[20]);
-            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[21]);
-            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[22]);
-            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-        }
-        { // imported model
-            Vertex3D[] vertices = plantModel.getVertices();
-            int[] indices = plantModel.getIndices();
-            float[] fvalues = new float[indices.length * 3];
-            float[] tvalues = new float[indices.length * 2];
-            float[] nvalues = new float[indices.length * 3];
-            for (int i = 0; i < indices.length; i++)
-            {
-                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-                nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
-                nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
-                nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
-            }
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[30]);
-            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[31]);
-            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[32]);
-            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-
-
-        }
-        { // imported model
-            Vertex3D[] vertices = grassModel.getVertices();
-            int[] indices = grassModel.getIndices();
-            float[] fvalues = new float[indices.length * 3];
-            float[] tvalues = new float[indices.length * 2];
-            float[] nvalues = new float[indices.length * 3];
-            for (int i = 0; i < indices.length; i++)
-            {
-                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-                nvalues[i * 3] = (float) (vertices[indices[i]]).getNormalX();
-                nvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getNormalY();
-                nvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getNormalZ();
-            }
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[40]);
-            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[41]);
-            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[42]);
-            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-
-
-        }
-        { // SUN
-            Vertex3D[] vertices = rock.getVertices();
-            int[] indices = rock.getIndices();
-            float[] fvalues = new float[indices.length * 3];
-            float[] tvalues = new float[indices.length * 2];
-            float[] nvalues = new float[indices.length * 3];
-            for (int i = 0; i < indices.length; i++)
-            {
-                fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-                fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-                fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-                tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-                tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-                nvalues[i * 3] = -(float) (vertices[indices[i]]).getNormalX();
-                nvalues[i * 3 + 1] = -(float) (vertices[indices[i]]).getNormalY();
-                nvalues[i * 3 + 2] = -(float) (vertices[indices[i]]).getNormalZ();
-            }
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[50]);
-            FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[51]);
-            FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[52]);
-            FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-        }
+        setupVerticesSphere(gl);
+        setupVerticesGrass(gl);
+        setupVerticesRock(gl);
+        setupVerticesMyModel(gl);
+        setupVerticesGrassModel(gl);
+        setupVerticesRockInverseNormals(gl);
+        setupVerteciesCube(gl);
     }
 
 
-    private Matrix3D perspective(float fovy, float aspect, float n, float f)
-    {
+    private Matrix3D perspective(float fovy, float aspect, float n, float f) {
         float q = 1.0f / (float) Math.tan((float) Math.toRadians(0.5f * fovy));
         float A = q / aspect;
         float B = (n + f) / (n - f);
@@ -629,9 +597,8 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         rt = r.transpose();
         return rt;
     }
-    private void installLights(Matrix3D v_matrix,Material material, GLAutoDrawable drawable)
-    {	GL4 gl = (GL4) drawable.getGL();
-
+    private void installLights(Matrix3D v_matrix,Material material, GLAutoDrawable drawable) {
+        GL4 gl = (GL4) drawable.getGL();
         Material currentMaterial = material;
         Point3D lightP = currentLight.getPosition();
         Point3D lightPv = lightP.mult(v_matrix);
@@ -640,31 +607,30 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         // set the current globalAmbient settings
         int globalAmbLoc = gl.glGetUniformLocation(rendering_program, "globalAmbient");
         gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, globalAmbLoc, 1, globalAmbient, 0);
+            // get the locations of the light and material fields in the shader
+            int ambLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.ambient");
+            int diffLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.diffuse");
+            int specLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.specular");
+            int posLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.position");
+            int MambLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.ambient");
+            int MdiffLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.diffuse");
+            int MspecLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.specular");
+            int MshiLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.shininess");
 
-        // get the locations of the light and material fields in the shader
-        int ambLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.ambient");
-        int diffLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.diffuse");
-        int specLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.specular");
-        int posLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "light.position");
-        int MambLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.ambient");
-        int MdiffLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.diffuse");
-        int MspecLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.specular");
-        int MshiLoc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "material.shininess");
+            //  set the uniform light and material values in the shader
+            gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, ambLoc, 1, currentLight.getAmbient(), 0);
+            gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, diffLoc, 1, currentLight.getDiffuse(), 0);
+            gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, specLoc, 1, currentLight.getSpecular(), 0);
+            gl.glProgramUniform3fv(rendering_program_blinnphong_lighting, posLoc, 1, currLightPos, 0);
+            gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MambLoc, 1, currentMaterial.getAmbient(), 0);
+            gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MdiffLoc, 1, currentMaterial.getDiffuse(), 0);
+            gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MspecLoc, 1, currentMaterial.getSpecular(), 0);
+            gl.glProgramUniform1f(rendering_program_blinnphong_lighting, MshiLoc, currentMaterial.getShininess());
 
-        //  set the uniform light and material values in the shader
-        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, ambLoc, 1, currentLight.getAmbient(), 0);
-        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, diffLoc, 1, currentLight.getDiffuse(), 0);
-        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, specLoc, 1, currentLight.getSpecular(), 0);
-        gl.glProgramUniform3fv(rendering_program_blinnphong_lighting, posLoc, 1, currLightPos, 0);
-        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MambLoc, 1, currentMaterial.getAmbient(), 0);
-        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MdiffLoc, 1, currentMaterial.getDiffuse(), 0);
-        gl.glProgramUniform4fv(rendering_program_blinnphong_lighting, MspecLoc, 1, currentMaterial.getSpecular(), 0);
-        gl.glProgramUniform1f(rendering_program_blinnphong_lighting, MshiLoc, currentMaterial.getShininess());
     }
 
 
-    private Matrix3D lookAt(graphicslib3D.Point3D eyeP, graphicslib3D.Point3D centerP, Vector3D upV)
-    {	Vector3D eyeV = new Vector3D(eyeP);
+    private Matrix3D lookAt(graphicslib3D.Point3D eyeP, graphicslib3D.Point3D centerP, Vector3D upV) {	Vector3D eyeV = new Vector3D(eyeP);
         Vector3D cenV = new Vector3D(centerP);
         Vector3D f = (cenV.minus(eyeV)).normalize();
         Vector3D sV = (f.cross(upV)).normalize();
@@ -697,43 +663,21 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     }
 
     // ---------------------------------- CONTROLS --------------------------------------
-    public void actionPerformed(ActionEvent e)
-    {
-//        if ("up".equals(e.getActionCommand()) && upDown < 1) {
-//            upDown += 0.1;
-//        }
-    }
-
-
     @Override
     public void mouseWheelMoved(MouseWheelEvent e)
     {
-        if (e.getUnitsToScroll() < 0) {
-            lightLoc.setY(lightLoc.getY()+.5);
-//            Vector3D t = new Vector3D();
-//            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
-//            t.scale(0.5f);
-//            xyz = xyz.add(t);
-//            zoom += 1f;
-           // System.out.println("wheels down size is " + xyz.getZ());
-        } else {
-            lightLoc.setY(lightLoc.getY()-.5);
-//            Vector3D t = new Vector3D();
-//            t.setX(n.getX());t.setY(n.getY());t.setZ(n.getZ());
-//            t.scale(-0.5f);
-//            xyz = xyz.add(t);
-//            //if  (zoom > 1 )
-//            zoom -= 1f;
-           // System.out.println("wheels down size is " + xyz.getZ());
-        }
+        if (e.getUnitsToScroll() < 0)
+            lightLoc.setY(lightLoc.getY()+.1);
+        else
+            lightLoc.setY(lightLoc.getY()-.1);
     }
-
     @Override
+
     public void mouseDragged(MouseEvent e) {
-        if (mousePoint.getX() > e.getX()) lightLoc.setX(lightLoc.getX()-.5);
-        if (mousePoint.getX() < e.getX()) lightLoc.setX(lightLoc.getX()+.5);
-        if (mousePoint.getY() > e.getY()) lightLoc.setZ(lightLoc.getZ()-.5);
-        if (mousePoint.getY() < e.getY()) lightLoc.setZ(lightLoc.getZ()+.5);
+        if (mousePoint.getX() > e.getX()) lightLoc.setX(lightLoc.getX()-.1);
+        if (mousePoint.getX() < e.getX()) lightLoc.setX(lightLoc.getX()+.1);
+        if (mousePoint.getY() > e.getY()) lightLoc.setZ(lightLoc.getZ()-.1);
+        if (mousePoint.getY() < e.getY()) lightLoc.setZ(lightLoc.getZ()+.1);
         mousePoint.setLocation(e.getPoint());
     }
 
@@ -745,98 +689,20 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     @Override public void mouseExited(MouseEvent e) {}
     @Override public void keyTyped(KeyEvent e) {}
     @Override
-    public void keyPressed(KeyEvent e)
-    {
-        switch (e.getKeyCode())
-        {
-            case KeyEvent.VK_SPACE:
-            {
-                axis = !axis;
-                break;
-            }
-            case KeyEvent.VK_0:
-            {
-                lookatcamera = 0;
-                zoom = 10;
-                strafe = 0;
-                upDown = 5;
-                break;
-            }
-            case KeyEvent.VK_1:
-            {
-                lookatcamera = 1;
-                zoom = 5f;
-                strafe = 0;
-                break;
-            }
-            case KeyEvent.VK_2:
-            {
-                lookatcamera = 2;
-                zoom = 5f;
-                strafe = 0;
-                break;
-            }
-            case KeyEvent.VK_3:
-            {
-                lookatcamera = 3;
-                zoom = 5;
-                strafe = 0;
-                break;
-            }
-            case KeyEvent.VK_4:
-            {
-                lookatcamera = 4;
-                zoom = 5f;
-                strafe = 0;
-                break;
-            }
-            case KeyEvent.VK_5:
-            {
-                lookatcamera = 5;
-                zoom = 5f;
-                break;
-            }
-            case KeyEvent.VK_6:
-            {
-                lookatcamera = 6;
-                zoom = 5f;
-                break;
-            }
-            case KeyEvent.VK_7:
-            {
-                lookatcamera = 7;
-                zoom = 5f;
-                break;
-            }
-            case KeyEvent.VK_8:
-            {
-                lookatcamera = 8;
-                zoom = 5f;
-                break;
-            }
-            case KeyEvent.VK_9:
-            {
-                lookatcamera = 9;
-                zoom = 5f;
-                strafe = 0;
-                break;
-            }
+    public void keyPressed(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_L: {if (lights==0)lights = 1; else lights=0;break;}
+            case KeyEvent.VK_SPACE: {axis = !axis;break;}
         }
     }
 
     @Override
-    public void keyReleased(KeyEvent e)
-    {
-
-    }
-
+    public void keyReleased(KeyEvent e) {}
     private void keyMaping()
     {
         int mapName = JComponent.WHEN_IN_FOCUSED_WINDOW;
         InputMap imap = this.getRootPane().getInputMap(mapName);
         ActionMap amap = this.getRootPane().getActionMap();
-
-
 
         KeyStroke wKey = KeyStroke.getKeyStroke('w');
         imap.put(wKey, "zoomin");
@@ -889,6 +755,9 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         amap.put("panleft", panleft);
 
     }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {}
 
     private class ZoomIn extends AbstractAction
     {
