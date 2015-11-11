@@ -31,18 +31,18 @@ uniform mat4 proj_matrix;
 uniform mat4 normalMat;
 uniform sampler2D s;
 uniform int l;
+uniform int flipNormal;
+// four parameters are definition of a plane: Ax + By + Cz + D
+vec4 clip_plane = vec4(0.0, 1.0, 0.0, 2.2);
 
 void main(void)
 {
-
-   // vec4 clip_plane = (0.0, 0.0, 1.0, 0.2);
-
-    //gl_ClipDistance[0] = dot(vec4(vertPos,1.0), clip_plane);
-
+if (flipNormal==1) varyingNormal = -varyingNormal;
+ gl_ClipDistance[0] = dot(vec4(vertPos,1.0), clip_plane);
 
     if (gl_InstanceID > 0){
         float x = (1.3 * sin( gl_InstanceID )) * (gl_InstanceID/5);
-        float y = +cos(gl_InstanceID);
+        float y = +cos(gl_InstanceID) * 1.2;
         float z = (1.3* cos(gl_InstanceID )) * (gl_InstanceID/5);
         vec3 pos = vertPos + vec3(x,y,z);
 

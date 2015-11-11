@@ -59,6 +59,8 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     int proj_loc;
     int n_location ;
     int light ;
+    int clip;
+    int flip_location;
     float aspect;
     Matrix3D pMat;
     MatrixStack mvStack;
@@ -142,7 +144,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
     }
     public void init(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
-        gl.glEnable(gl.GL_CLIP_DISTANCE0);
+
         Shader sh = new Shader();
         rendering_program_axis = sh.createShaderPrograms(drawable,"shaders/axisvert.glsl","shaders/axisfrag.glsl");
         rendering_program_no_lighting = sh.createShaderPrograms(drawable,"shaders/vert.glsl","shaders/frag.glsl");
@@ -191,6 +193,7 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glEnable(GL_DEPTH_TEST);
         gl.glGenerateMipmap(GL_TEXTURE_2D);
         gl.glFrontFace(GL_CCW);
+        gl.glUniform1i(flip_location, 0);
     }
     public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
@@ -202,6 +205,9 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         proj_loc = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "proj_matrix");
         n_location = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "normalMat");
         light = gl.glGetUniformLocation(rendering_program_blinnphong_lighting,"l");
+        flip_location = gl.glGetUniformLocation(rendering_program_blinnphong_lighting, "flipNormal");
+        //clip = gl.glGetUniformLocation(rendering_program_blinnphong_lighting,"clip_plane");
+
         gl.glUniform1i(light,lights);
         aspect = myCanvas.getWidth() / myCanvas.getHeight();
         pMat = perspective(60.0f, aspect, 0.001f, 10000.0f);
@@ -256,6 +262,9 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glDrawArrays(GL_TRIANGLES, 0, myModel.getIndices().length);
         mvStack.popMatrix();
         //------------------------------------------------------------------------ROCK
+        gl.glEnable(gl.GL_CLIP_DISTANCE0);
+
+
         installLights(mvStack.peek(),Material.GOLD, drawable);
         mvStack.pushMatrix();
         mvStack.translate(-5,1,-5);
@@ -278,6 +287,9 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         gl.glDrawArrays(GL_TRIANGLES, 0, rock.getIndices().length);
         mvStack.popMatrix();
         mvStack.popMatrix();
+        gl.glDisable(gl.GL_CLIP_DISTANCE0);
+
+
 
         //---------------------------------------------------------------------------GRASS
         installLights(mvStack.peek(), grassMaterial, drawable);
@@ -311,16 +323,17 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         mvStack.rotate(degreePerSec(1f),1,0,0);
         mvStack.scale(0.5+rand.nextFloat()/2,0.5+rand.nextFloat()/2,0.5+rand.nextFloat()/2);
 
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[50]);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[20]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[51]);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[21]);
         gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[52]);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[22]);
         gl.glVertexAttribPointer(2, 2, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(2);
         setupDisplay(gl);
+        gl.glUniform1i(flip_location, 1);
         gl.glBindTexture(GL_TEXTURE_2D, sunTexture);
         gl.glGenerateMipmap(GL_TEXTURE_2D);
         gl.glFrontFace(GL_CCW);
@@ -503,36 +516,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
 
 
     }//40,41,42
-    private void setupVerticesRockInverseNormals(GL4 gl) { // SUN
-        Vertex3D[] vertices = rock.getVertices();
-        int[] indices = rock.getIndices();
-        float[] fvalues = new float[indices.length * 3];
-        float[] tvalues = new float[indices.length * 2];
-        float[] nvalues = new float[indices.length * 3];
-        for (int i = 0; i < indices.length; i++)
-        {
-            fvalues[i * 3] = (float) (vertices[indices[i]]).getX();
-            fvalues[i * 3 + 1] = (float) (vertices[indices[i]]).getY();
-            fvalues[i * 3 + 2] = (float) (vertices[indices[i]]).getZ();
-            tvalues[i * 2] = (float) (vertices[indices[i]]).getS();
-            tvalues[i * 2 + 1] = (float) (vertices[indices[i]]).getT();
-            nvalues[i * 3] = -(float) (vertices[indices[i]]).getNormalX();
-            nvalues[i * 3 + 1] = -(float) (vertices[indices[i]]).getNormalY();
-            nvalues[i * 3 + 2] = -(float) (vertices[indices[i]]).getNormalZ();
-        }
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[50]);
-        FloatBuffer vertBuf = FloatBuffer.wrap(fvalues);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[51]);
-        FloatBuffer norBuf = FloatBuffer.wrap(nvalues);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL.GL_STATIC_DRAW);
-
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[52]);
-        FloatBuffer texBuf = FloatBuffer.wrap(tvalues);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, texBuf.limit() * 4, texBuf, GL.GL_STATIC_DRAW);
-    }//50,51,52
     private void setupVertices(GL4 gl) {
         gl.glGenVertexArrays(vao.length, vao,0);
         gl.glBindVertexArray(vao[0]);
@@ -542,7 +525,6 @@ public class Ass3 extends JFrame implements GLEventListener, ActionListener, Mou
         setupVerticesRock(gl);
         setupVerticesMyModel(gl);
         setupVerticesGrassModel(gl);
-        setupVerticesRockInverseNormals(gl);
         setupVerteciesCube(gl);
     }
     private Matrix3D perspective(float fovy, float aspect, float n, float f) {
